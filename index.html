@@ -37,8 +37,6 @@
     transition: border-radius 0.3s ease, opacity 0.4s ease;
     object-fit: cover;
   }
-  .art.fade-in { animation: fadeIn 0.4s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   .info { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; flex: 1; }
   .track {
     font-size: var(--title-size);
@@ -158,10 +156,7 @@
     border-radius: 6px;
     cursor: pointer;
   }
-  .form-row {
-    display: flex;
-    gap: 12px;
-  }
+  .form-row { display: flex; gap: 12px; }
   .form-row .form-group { flex: 1; }
   .btn {
     padding: 10px 16px;
@@ -179,7 +174,7 @@
 </style>
 </head>
 <body>
-  <div class="art-container" id="authTrigger" style="cursor: pointer;" title="Click to authenticate with Spotify">
+  <div class="art-container" id="authTrigger" style="cursor: pointer;" title="Click to authenticate">
     <img class="art" id="art" alt="Album art">
     <div class="progress" id="progress"></div>
     <div class="now-playing-indicator" id="indicator">
@@ -187,8 +182,8 @@
     </div>
   </div>
   <div class="info">
-    <div class="track" id="track">Nothing playing</div>
-    <div class="artist" id="artist">Start music on Spotify</div>
+    <div class="track" id="track">Loading...</div>
+    <div class="artist" id="artist">Connecting to Spotify</div>
   </div>
 
   <!-- Config Panel -->
@@ -289,17 +284,13 @@
   const authTrigger = document.getElementById('authTrigger');
   const configToggle = document.getElementById('configToggle');
 
-  // Hide the gear icon completely if opened in OBS mode
-  if (isOBS) {
-    configToggle.style.display = 'none';
-  }
-
+  if (isOBS) configToggle.style.display = 'none';
   if (!config.showIndicator) indicator.style.display = 'none';
 
   authTrigger.addEventListener('click', async () => {
     if (SPOTIFY_CLIENT_ID === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
       trackEl.textContent = 'Set Client ID';
-      artistEl.textContent = 'Open config page in browser';
+      artistEl.textContent = 'Open config in a web browser';
       return;
     }
     await authenticate();
@@ -308,12 +299,11 @@
   let lastArtUrl = '';
 
   function getAccessToken() {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    if (token && expiry && Date.now() < parseInt(expiry)) {
-      return token;
-    }
-    return null;
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  function getValidTokenExpiry() {
+    return localStorage.getItem(TOKEN_EXPIRY_KEY);
   }
 
   function clearToken() {
@@ -340,6 +330,8 @@
 
   async function exchangeCodeForToken(code) {
     const codeVerifier = localStorage.getItem('sw_code_verifier');
+    if (!codeVerifier) return;
+
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
@@ -354,15 +346,12 @@
       body: body.toString(),
     });
 
-    if (!res.ok) {
-      throw new Error('Token exchange failed: ' + res.status);
-    }
+    if (!res.ok) throw new Error('Token exchange failed');
 
     const data = await res.json();
     localStorage.setItem(TOKEN_KEY, data.access_token);
     localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + data.expires_in * 1000));
     localStorage.removeItem('sw_code_verifier');
-    return data.access_token;
   }
 
   function generateCodeVerifier() {
@@ -386,44 +375,48 @@
     const res = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    if (res.status === 204) return null;
+    if (res.status === 204) return null; // Nothing playing is standard HTTP 204
     if (res.status === 401) {
       clearToken();
       return null;
     }
-    if (!res.ok) {
-      throw new Error('API error: ' + res.status);
-    }
+    if (!res.ok) throw new Error('API error: ' + res.status);
     return res.json();
   }
 
-  async function fetchStatus() {
+  async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    
     if (authCode) {
       try {
         await exchangeCodeForToken(authCode);
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState({}, document.title, window.location.pathname + (isOBS ? '?obs=true' : ''));
       } catch (e) {
-        console.error('Token exchange error:', e);
-        trackEl.textContent = 'Auth failed';
-        artistEl.textContent = 'Click to retry';
-        return;
+        console.error('Auth error:', e);
       }
     }
 
-    let token = getAccessToken();
+    const token = getAccessToken();
     if (!token) {
       if (SPOTIFY_CLIENT_ID !== 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
         trackEl.textContent = 'Authenticating...';
         artistEl.textContent = 'Redirecting to Spotify';
-        setTimeout(authenticate, 500);
+        setTimeout(authenticate, 400);
         return;
       }
       trackEl.textContent = 'Connect Spotify';
-      artistEl.textContent = isOBS ? 'Authorize in browser first' : 'Click settings gear ⚙';
+      artistEl.textContent = isOBS ? 'Interact & log in via browser' : 'Click settings ⚙';
       return;
     }
+
+    pollPlayback();
+    setInterval(pollPlayback, config.pollInterval);
+  }
+
+  async function pollPlayback() {
+    const token = getAccessToken();
+    if (!token) return;
 
     try {
       const data = await apiFetch(
@@ -448,27 +441,28 @@
           if (data.duration_ms > 0) {
             progressEl.style.width = ((data.progress_ms / data.duration_ms) * 100) + '%';
           }
+          indicator.style.display = config.showIndicator ? 'flex' : 'none';
         } else {
           art.style.opacity = '0.5';
           trackEl.textContent = 'Paused: ' + (item.name || '');
           artistEl.textContent = item.artists ? item.artists.map(a => a.name).join(', ') : '';
           progressEl.style.width = '0%';
+          indicator.style.display = 'none';
         }
       } else {
+        // HTTP 204 or empty response means nothing is playing/active
         art.style.opacity = '0.2';
         trackEl.textContent = 'Nothing playing';
-        artistEl.textContent = 'Play a track on Spotify';
+        artistEl.textContent = 'Play music on Spotify';
         progressEl.style.width = '0%';
+        indicator.style.display = 'none';
       }
     } catch (e) {
-      console.error('Fetch error:', e);
-      trackEl.textContent = 'Auth expired';
-      artistEl.textContent = 'Click to reconnect';
+      console.error('Polling error:', e);
     }
   }
 
-  fetchStatus();
-  setInterval(fetchStatus, config.pollInterval);
+  init();
 
   // === Config Panel & Link Generator Handlers ===
   const configPanel = document.getElementById('configPanel');
@@ -523,9 +517,7 @@
 
   document.getElementById('saveConfigBtn').addEventListener('click', () => {
     const newClientId = document.getElementById('clientIdInput').value.trim();
-    if (newClientId) {
-      localStorage.setItem('sw_client_id', newClientId);
-    }
+    if (newClientId) localStorage.setItem('sw_client_id', newClientId);
     localStorage.setItem('sw_artSize', document.getElementById('artSizeInput').value);
     localStorage.setItem('sw_artRadius', document.getElementById('artRadiusInput').value);
     localStorage.setItem('sw_titleColor', document.getElementById('titleColorInput').value);
@@ -534,7 +526,6 @@
     localStorage.setItem('sw_bgColor', document.getElementById('bgColorInput').value);
     localStorage.setItem('sw_showIndicator', document.getElementById('showIndicatorInput').checked);
     localStorage.setItem('sw_pollInterval', document.getElementById('pollIntervalInput').value);
-
     location.reload();
   });
 
