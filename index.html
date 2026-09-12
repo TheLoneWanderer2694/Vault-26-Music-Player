@@ -392,7 +392,7 @@
               <div class="text-marquee-container">
                 <div id="prevArtist" class="artist marquee-text">Artist Name</div>
               </div>
-              <div id="prevBar" class="bar"><div id="fill" class="fill"></div></div>
+              <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
             </div>
           </div>
         </div>
@@ -701,12 +701,14 @@
     function toggleAdvanced() {
       const panel = document.getElementById('advancedPanel');
       const arrow = document.getElementById('advArrow');
-      if (panel.classList.contains('open')) {
-        panel.classList.remove('open');
-        arrow.textContent = '▼';
-      } else {
-        panel.classList.add('open');
-        arrow.textContent = '▲';
+      if (panel && arrow) {
+        if (panel.classList.contains('open')) {
+          panel.classList.remove('open');
+          arrow.textContent = '▼';
+        } else {
+          panel.classList.add('open');
+          arrow.textContent = '▲';
+        }
       }
     }
 
@@ -735,7 +737,9 @@
     }
 
     async function startAuth() {
-      const clientId = document.getElementById('clientIdInput').value.trim();
+      const clientIdInput = document.getElementById('clientIdInput');
+      if (!clientIdInput) return;
+      const clientId = clientIdInput.value.trim();
       if (!clientId) return alert('Please enter your Spotify Client ID');
 
       localStorage.setItem('spotify_client_id', clientId);
@@ -817,65 +821,66 @@
     }
 
     function updatePreview() {
-      const layout = document.getElementById('cfgLayout').value;
-      const fontFamily = document.getElementById('cfgFontFamily').value;
-      const bg = document.getElementById('cfgBg').value;
-      const text = document.getElementById('cfgText').value;
-      const accent = document.getElementById('cfgAccent').value;
-      const borderColor = document.getElementById('cfgBorderColor').value;
-      const borderWidth = document.getElementById('cfgBorderWidth').value || '0';
-      const borderStyle = document.getElementById('cfgBorderStyle').value;
-      const radius = document.getElementById('cfgRadius').value || '0';
-      const artRadius = document.getElementById('cfgArtRadius').value || '0';
-      const width = document.getElementById('cfgWidth').value || '320';
-      const fontSize = document.getElementById('cfgFontSize').value || '13';
-      const padding = document.getElementById('cfgPadding').value || '10';
-      const textAlign = document.getElementById('cfgTextAlign').value;
-      const textTransform = document.getElementById('cfgTextTransform').value;
-      const letterSpacing = document.getElementById('cfgLetterSpacing').value || '0';
-      const shadow = document.getElementById('cfgShadow').value;
-      const hideDelay = document.getElementById('cfgHideDelay').value || '0';
-      const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
-      const showArt = document.getElementById('cfgShowArt').checked;
-      const showBar = document.getElementById('cfgShowBar').checked;
-      const fallbackPlaylist = extractPlaylistId(document.getElementById('cfgFallbackPlaylist').value);
+      const previewWidget = document.getElementById('previewWidget');
+      if (!previewWidget) return;
+
+      const layout = document.getElementById('cfgLayout')?.value || 'horizontal';
+      const fontFamily = document.getElementById('cfgFontFamily')?.value || 'sans-serif';
+      const bg = document.getElementById('cfgBg')?.value || '#121212';
+      const text = document.getElementById('cfgText')?.value || '#ffffff';
+      const accent = document.getElementById('cfgAccent')?.value || '#1db954';
+      const borderColor = document.getElementById('cfgBorderColor')?.value || '#333333';
+      const borderWidth = document.getElementById('cfgBorderWidth')?.value || '0';
+      const borderStyle = document.getElementById('cfgBorderStyle')?.value || 'solid';
+      const radius = document.getElementById('cfgRadius')?.value || '0';
+      const artRadius = document.getElementById('cfgArtRadius')?.value || '0';
+      const width = document.getElementById('cfgWidth')?.value || '320';
+      const fontSize = document.getElementById('cfgFontSize')?.value || '13';
+      const padding = document.getElementById('cfgPadding')?.value || '10';
+      const textAlign = document.getElementById('cfgTextAlign')?.value || 'left';
+      const textTransform = document.getElementById('cfgTextTransform')?.value || 'none';
+      const letterSpacing = document.getElementById('cfgLetterSpacing')?.value || '0';
+      const shadow = document.getElementById('cfgShadow')?.value || 'soft';
+      const hideDelay = document.getElementById('cfgHideDelay')?.value || '0';
+      const channel = (document.getElementById('cfgTwitchChannel')?.value || '').trim().toLowerCase();
+      const showArt = document.getElementById('cfgShowArt')?.checked ?? true;
+      const showBar = document.getElementById('cfgShowBar')?.checked ?? true;
+      const fallbackPlaylist = extractPlaylistId(document.getElementById('cfgFallbackPlaylist')?.value || '');
 
       // Advanced Params
-      const reqCmd = document.getElementById('cfgReqCmd').value.trim() || '!request';
-      const clearCmd = document.getElementById('cfgClearCmd').value.trim() || '!clearqueue';
-      const reqPerm = document.getElementById('cfgReqPerm').value;
-      const clearPerm = document.getElementById('cfgClearPerm').value;
-      const maxDuration = document.getElementById('cfgMaxDuration').value || '0';
+      const reqCmd = (document.getElementById('cfgReqCmd')?.value || '!request').trim();
+      const clearCmd = (document.getElementById('cfgClearCmd')?.value || '!clearqueue').trim();
+      const reqPerm = document.getElementById('cfgReqPerm')?.value || 'everyone';
+      const clearPerm = document.getElementById('cfgClearPerm')?.value || 'mods';
+      const maxDuration = document.getElementById('cfgMaxDuration')?.value || '0';
 
-      document.getElementById('cfgBgVal').textContent = bg;
-      document.getElementById('cfgTextVal').textContent = text;
-      document.getElementById('cfgAccentVal').textContent = accent;
-      document.getElementById('cfgBorderColorVal').textContent = borderColor;
+      if (document.getElementById('cfgBgVal')) document.getElementById('cfgBgVal').textContent = bg;
+      if (document.getElementById('cfgTextVal')) document.getElementById('cfgTextVal').textContent = text;
+      if (document.getElementById('cfgAccentVal')) document.getElementById('cfgAccentVal').textContent = accent;
+      if (document.getElementById('cfgBorderColorVal')) document.getElementById('cfgBorderColorVal').textContent = borderColor;
 
-      const w = document.getElementById('previewWidget');
-
-      w.style.background = bg;
-      w.style.color = text;
-      w.style.borderRadius = `${radius}px`;
-      w.style.width = `${width}px`;
-      w.style.padding = `${padding}px`;
-      w.style.fontFamily = fontFamily;
-      w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+      previewWidget.style.background = bg;
+      previewWidget.style.color = text;
+      previewWidget.style.borderRadius = `${radius}px`;
+      previewWidget.style.width = `${width}px`;
+      previewWidget.style.padding = `${padding}px`;
+      previewWidget.style.fontFamily = fontFamily;
+      previewWidget.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
 
       if (layout === 'vertical') {
-        w.classList.add('layout-vertical');
+        previewWidget.classList.add('layout-vertical');
       } else {
-        w.classList.remove('layout-vertical');
+        previewWidget.classList.remove('layout-vertical');
       }
 
       if (shadow === 'soft') {
-        w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+        previewWidget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
       } else if (shadow === 'hard') {
-        w.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
+        previewWidget.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
       } else if (shadow === 'glow') {
-        w.style.boxShadow = `0 0 14px ${accent}`;
+        previewWidget.style.boxShadow = `0 0 14px ${accent}`;
       } else {
-        w.style.boxShadow = 'none';
+        previewWidget.style.boxShadow = 'none';
       }
       
       const titleEl = document.getElementById('prevTitle');
@@ -885,22 +890,34 @@
         el.style.textAlign = textAlign;
       });
 
-      titleEl.style.fontSize = `${fontSize}px`;
-      titleEl.style.textTransform = textTransform;
-      titleEl.style.letterSpacing = `${letterSpacing}px`;
+      if (titleEl) {
+        titleEl.style.fontSize = `${fontSize}px`;
+        titleEl.style.textTransform = textTransform;
+        titleEl.style.letterSpacing = `${letterSpacing}px`;
+      }
 
-      artistEl.style.color = text;
-      artistEl.style.opacity = '0.75';
-      artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
-      artistEl.style.textTransform = textTransform;
-      artistEl.style.letterSpacing = `${letterSpacing}px`;
+      if (artistEl) {
+        artistEl.style.color = text;
+        artistEl.style.opacity = '0.75';
+        artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+        artistEl.style.textTransform = textTransform;
+        artistEl.style.letterSpacing = `${letterSpacing}px`;
+      }
       
-      document.getElementById('prevBar').style.background = accent + '33';
-      document.getElementById('prevFill').style.background = accent;
+      const prevBar = document.getElementById('prevBar');
+      const prevFill = document.getElementById('prevFill');
+      const prevAlbumArt = document.getElementById('prevAlbumArt');
+
+      if (prevBar) {
+        prevBar.style.background = accent + '33';
+        prevBar.style.display = showBar ? 'block' : 'none';
+      }
+      if (prevFill) prevFill.style.background = accent;
       
-      document.getElementById('prevAlbumArt').style.display = showArt ? 'block' : 'none';
-      document.getElementById('prevAlbumArt').style.borderRadius = `${artRadius}px`;
-      document.getElementById('prevBar').style.display = showBar ? 'block' : 'none';
+      if (prevAlbumArt) {
+        prevAlbumArt.style.display = showArt ? 'block' : 'none';
+        prevAlbumArt.style.borderRadius = `${artRadius}px`;
+      }
 
       checkAndApplyMarquee(titleEl);
       checkAndApplyMarquee(artistEl);
@@ -908,7 +925,7 @@
       const clientId = localStorage.getItem('spotify_client_id');
       const refreshToken = localStorage.getItem('spotify_refresh_token');
 
-      if (clientId && refreshToken) {
+      if (clientId && refreshToken && document.getElementById('obsUrlOutput')) {
         const params = new URLSearchParams({
           mode: 'overlay',
           cid: clientId,
@@ -948,6 +965,7 @@
 
     function copyObsUrl() {
       const input = document.getElementById('obsUrlOutput');
+      if (!input) return;
       input.select();
       document.execCommand('copy');
       alert('Copied to clipboard!');
@@ -955,6 +973,8 @@
 
     function applyOverlaySettings(params) {
       const w = document.getElementById('overlayView');
+      if (!w) return;
+
       const layout = params.get('layout') || 'horizontal';
       const font = params.get('font') || 'sans-serif';
       const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
@@ -1004,22 +1024,34 @@
         el.style.textAlign = textAlign;
       });
 
-      titleEl.style.fontSize = `${fontSize}px`;
-      titleEl.style.textTransform = textTransform;
-      titleEl.style.letterSpacing = `${letterSpacing}px`;
+      if (titleEl) {
+        titleEl.style.fontSize = `${fontSize}px`;
+        titleEl.style.textTransform = textTransform;
+        titleEl.style.letterSpacing = `${letterSpacing}px`;
+      }
 
-      artistEl.style.color = text;
-      artistEl.style.opacity = '0.75';
-      artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
-      artistEl.style.textTransform = textTransform;
-      artistEl.style.letterSpacing = `${letterSpacing}px`;
+      if (artistEl) {
+        artistEl.style.color = text;
+        artistEl.style.opacity = '0.75';
+        artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+        artistEl.style.textTransform = textTransform;
+        artistEl.style.letterSpacing = `${letterSpacing}px`;
+      }
 
-      document.getElementById('bar').style.background = accent + '33';
-      document.getElementById('fill').style.background = accent;
+      const barEl = document.getElementById('bar');
+      const fillEl = document.getElementById('fill');
+      const albumArtEl = document.getElementById('albumArt');
 
-      document.getElementById('albumArt').style.display = showArt ? 'block' : 'none';
-      document.getElementById('albumArt').style.borderRadius = `${artRadius}px`;
-      document.getElementById('bar').style.display = showBar ? 'block' : 'none';
+      if (barEl) {
+        barEl.style.background = accent + '33';
+        barEl.style.display = showBar ? 'block' : 'none';
+      }
+      if (fillEl) fillEl.style.background = accent;
+
+      if (albumArtEl) {
+        albumArtEl.style.display = showArt ? 'block' : 'none';
+        albumArtEl.style.borderRadius = `${artRadius}px`;
+      }
     }
 
     let activeSpotifyToken = null;
@@ -1074,9 +1106,10 @@
         } else {
           if (!pausedTimestamp) pausedTimestamp = Date.now();
           const elapsed = Date.now() - pausedTimestamp;
-          if (elapsed >= hideDelayMs) {
-            document.getElementById('overlayView').style.opacity = '0';
-            document.getElementById('overlayView').style.transform = 'translateY(10px)';
+          const overlayWidget = document.getElementById('overlayView');
+          if (overlayWidget && elapsed >= hideDelayMs) {
+            overlayWidget.style.opacity = '0';
+            overlayWidget.style.transform = 'translateY(10px)';
           }
         }
       }
@@ -1109,33 +1142,41 @@
           pausedTimestamp = null;
 
           const currentTrackId = data.item.id;
+          const overlayWidget = document.getElementById('overlayView');
+
           if (currentTrackId !== lastTrackId) {
             lastTrackId = currentTrackId;
 
-            const overlayWidget = document.getElementById('overlayView');
-            overlayWidget.style.animation = 'none';
-            overlayWidget.offsetHeight;
-            overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
+            if (overlayWidget) {
+              overlayWidget.style.animation = 'none';
+              overlayWidget.offsetHeight;
+              overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
+            }
 
             const trackNameText = document.getElementById('trackNameText');
             const artistEl = document.getElementById('artist');
+            const albumArtEl = document.getElementById('albumArt');
             
-            trackNameText.textContent = data.item.name;
-            artistEl.textContent = data.item.artists.map(a => a.name).join(', ');
-            document.getElementById('albumArt').src = data.item.album.images[0]?.url || '';
+            if (trackNameText) trackNameText.textContent = data.item.name;
+            if (artistEl) artistEl.textContent = data.item.artists.map(a => a.name).join(', ');
+            if (albumArtEl) albumArtEl.src = data.item.album.images[0]?.url || '';
 
-            delete document.getElementById('title').dataset.duplicated;
-            delete artistEl.dataset.duplicated;
+            const titleContainer = document.getElementById('title');
+            if (titleContainer) delete titleContainer.dataset.duplicated;
+            if (artistEl) delete artistEl.dataset.duplicated;
 
-            checkAndApplyMarquee(document.getElementById('title'));
+            checkAndApplyMarquee(titleContainer);
             checkAndApplyMarquee(artistEl);
           }
           
           const percent = (data.progress_ms / data.item.duration_ms) * 100;
-          document.getElementById('fill').style.width = `${percent}%`;
+          const fillEl = document.getElementById('fill');
+          if (fillEl) fillEl.style.width = `${percent}%`;
           
-          document.getElementById('overlayView').style.opacity = '1';
-          document.getElementById('overlayView').style.transform = 'translateY(0)';
+          if (overlayWidget) {
+            overlayWidget.style.opacity = '1';
+            overlayWidget.style.transform = 'translateY(0)';
+          }
         } catch (e) {
           handlePlaybackStopped();
         }
