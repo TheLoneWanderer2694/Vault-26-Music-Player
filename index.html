@@ -101,51 +101,6 @@
       border-bottom: 1px dashed #333;
     }
 
-    .preset-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .preset-btn {
-      background: #282828;
-      border: 1px solid #3e3e3e;
-      color: #fff;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      text-align: center;
-      transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .preset-btn:hover {
-      transform: translateY(-2px);
-      background: #3e3e3e;
-      border-color: #555;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .preset-btn:active { transform: translateY(0); }
-    
-    /* Preset Themes Specific Styles */
-    .preset-btn.p5-btn { background: #e60012; color: #fff; border-color: #ff3344; }
-    .preset-btn.p5-btn:hover { background: #ff1a2d; box-shadow: 0 4px 12px rgba(230, 0, 18, 0.4); }
-    
-    .preset-btn.synth-btn { background: #1a0933; color: #00f5d4; border-color: #f72585; }
-    .preset-btn.synth-btn:hover { background: #2a124d; box-shadow: 0 0 10px #f72585; }
-
-    .preset-btn.glass-btn { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
-    .preset-btn.glass-btn:hover { background: rgba(255, 255, 255, 0.2); }
-
-    .preset-btn.gb-btn { background: #8bac0f; color: #0f380f; border-color: #306230; }
-    .preset-btn.gb-btn:hover { background: #9bbc0f; }
-
-    .preset-btn.cp-btn { background: #fcee0a; color: #000; border-color: #fcee0a; }
-    .preset-btn.cp-btn:hover { background: #fff033; box-shadow: 0 0 10px #fcee0a; }
-
     .advanced-toggle {
       background: #222222;
       border: 1px solid #333;
@@ -359,79 +314,6 @@
       box-shadow: 0 0 6px #ffffff;
     }
 
-    /* PRESET ANIMATIONS & VISUAL EFFECTS */
-
-    /* Persona 5 Glitch & Offset Entrance */
-    .widget.preset-persona5 {
-      transform: skewX(-5deg);
-      border: 2px solid #000000 !important;
-      box-shadow: 6px 6px 0px #000000, 10px 10px 0px #e60012 !important;
-      animation: p5Glitch 0.4s ease-out;
-    }
-
-    @keyframes p5Glitch {
-      0% { transform: skewX(-15deg) scale(0.95); opacity: 0.5; }
-      50% { transform: skewX(5deg) scale(1.02); }
-      100% { transform: skewX(-5deg) scale(1); opacity: 1; }
-    }
-
-    .widget.preset-persona5 .album-art {
-      transform: skewX(5deg);
-      border: 2px solid #ffffff;
-      box-shadow: 3px 3px 0px #000000;
-    }
-
-    .widget.preset-persona5 .title {
-      font-weight: 900;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      text-shadow: 2px 2px 0px #000000;
-    }
-
-    /* Synthwave Pulsing Neon Glow */
-    .widget.preset-synthwave {
-      animation: synthPulse 3s infinite alternate ease-in-out;
-    }
-
-    @keyframes synthPulse {
-      0% { box-shadow: 0 0 8px #f72585, inset 0 0 6px #7b2cbf; }
-      100% { box-shadow: 0 0 18px #f72585, inset 0 0 12px #7b2cbf; }
-    }
-
-    /* Cyberpunk Scanline Effect */
-    .widget.preset-cyberpunk {
-      position: relative;
-    }
-
-    .widget.preset-cyberpunk::before {
-      content: '';
-      position: absolute;
-      top: -100%; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.2), transparent);
-      animation: cyberpunkScan 4s linear infinite;
-      pointer-events: none;
-    }
-
-    @keyframes cyberpunkScan {
-      0% { top: -100%; }
-      100% { top: 200%; }
-    }
-
-    /* Game Boy LCD Scanlines */
-    .widget.preset-gameboy::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: repeating-linear-gradient(0deg, rgba(15, 56, 15, 0.15), rgba(15, 56, 15, 0.15) 1px, transparent 1px, transparent 2px);
-      pointer-events: none;
-    }
-
-    /* Glassmorphism Dynamic Class */
-    .widget.preset-glass {
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
     /* OBS Overlay Mode Override */
     body.overlay-mode {
       background: transparent !important;
@@ -503,18 +385,6 @@
               <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
             </div>
           </div>
-        </div>
-
-        <!-- Quick Theme Presets -->
-        <div class="section-divider">Quick Style Presets</div>
-        <div class="preset-grid">
-          <button type="button" class="preset-btn" onclick="applyPreset('default')">Default Modern</button>
-          <button type="button" class="preset-btn p5-btn" onclick="applyPreset('persona5')">Persona 5</button>
-          <button type="button" class="preset-btn synth-btn" onclick="applyPreset('synthwave')">Synthwave</button>
-          <button type="button" class="preset-btn glass-btn" onclick="applyPreset('glass')">Glassmorphism</button>
-          <button type="button" class="preset-btn gb-btn" onclick="applyPreset('gameboy')">Game Boy</button>
-          <button type="button" class="preset-btn cp-btn" onclick="applyPreset('cyberpunk')">Cyberpunk</button>
-          <button type="button" class="preset-btn" onclick="applyPreset('minimal')">Minimal Dark</button>
         </div>
 
         <!-- Layout & Typography Settings -->
@@ -770,8 +640,6 @@
     const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-    let currentPreset = 'default';
-
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
@@ -832,105 +700,6 @@
       const target = document.getElementById(pageId);
       if (target) target.classList.add('active');
       if (pageId === 'pageCustomize' || pageId === 'pageExport') updatePreview();
-    }
-
-    function applyPreset(presetName) {
-      currentPreset = presetName;
-
-      if (presetName === 'persona5') {
-        document.getElementById('cfgBg').value = '#e60012';
-        document.getElementById('cfgText').value = '#ffffff';
-        document.getElementById('cfgAccent').value = '#ffffff';
-        document.getElementById('cfgBorderColor').value = '#000000';
-        document.getElementById('cfgBorderWidth').value = '2';
-        document.getElementById('cfgBorderStyle').value = 'solid';
-        document.getElementById('cfgFontFamily').value = "'Impact', sans-serif";
-        document.getElementById('cfgTextTransform').value = 'uppercase';
-        document.getElementById('cfgLetterSpacing').value = '1';
-        document.getElementById('cfgRadius').value = '0';
-        document.getElementById('cfgArtRadius').value = '0';
-        document.getElementById('cfgShadow').value = 'hard';
-      } else if (presetName === 'synthwave') {
-        document.getElementById('cfgBg').value = '#1a0933';
-        document.getElementById('cfgText').value = '#00f5d4';
-        document.getElementById('cfgAccent').value = '#f72585';
-        document.getElementById('cfgBorderColor').value = '#7b2cbf';
-        document.getElementById('cfgBorderWidth').value = '2';
-        document.getElementById('cfgBorderStyle').value = 'dashed';
-        document.getElementById('cfgFontFamily').value = 'monospace';
-        document.getElementById('cfgTextTransform').value = 'uppercase';
-        document.getElementById('cfgLetterSpacing').value = '2';
-        document.getElementById('cfgRadius').value = '8';
-        document.getElementById('cfgArtRadius').value = '4';
-        document.getElementById('cfgShadow').value = 'glow';
-      } else if (presetName === 'glass') {
-        document.getElementById('cfgBg').value = '#222222';
-        document.getElementById('cfgText').value = '#ffffff';
-        document.getElementById('cfgAccent').value = '#1db954';
-        document.getElementById('cfgBorderColor').value = '#ffffff';
-        document.getElementById('cfgBorderWidth').value = '1';
-        document.getElementById('cfgBorderStyle').value = 'solid';
-        document.getElementById('cfgFontFamily').value = 'sans-serif';
-        document.getElementById('cfgTextTransform').value = 'none';
-        document.getElementById('cfgLetterSpacing').value = '0';
-        document.getElementById('cfgRadius').value = '16';
-        document.getElementById('cfgArtRadius').value = '10';
-        document.getElementById('cfgShadow').value = 'soft';
-      } else if (presetName === 'gameboy') {
-        document.getElementById('cfgBg').value = '#8bac0f';
-        document.getElementById('cfgText').value = '#0f380f';
-        document.getElementById('cfgAccent').value = '#306230';
-        document.getElementById('cfgBorderColor').value = '#0f380f';
-        document.getElementById('cfgBorderWidth').value = '3';
-        document.getElementById('cfgBorderStyle').value = 'solid';
-        document.getElementById('cfgFontFamily').value = 'monospace';
-        document.getElementById('cfgTextTransform').value = 'uppercase';
-        document.getElementById('cfgLetterSpacing').value = '1';
-        document.getElementById('cfgRadius').value = '0';
-        document.getElementById('cfgArtRadius').value = '0';
-        document.getElementById('cfgShadow').value = 'hard';
-      } else if (presetName === 'cyberpunk') {
-        document.getElementById('cfgBg').value = '#fcee0a';
-        document.getElementById('cfgText').value = '#000000';
-        document.getElementById('cfgAccent').value = '#00f0ff';
-        document.getElementById('cfgBorderColor').value = '#000000';
-        document.getElementById('cfgBorderWidth').value = '3';
-        document.getElementById('cfgBorderStyle').value = 'solid';
-        document.getElementById('cfgFontFamily').value = "'Impact', sans-serif";
-        document.getElementById('cfgTextTransform').value = 'uppercase';
-        document.getElementById('cfgLetterSpacing').value = '2';
-        document.getElementById('cfgRadius').value = '0';
-        document.getElementById('cfgArtRadius').value = '0';
-        document.getElementById('cfgShadow').value = 'hard';
-      } else if (presetName === 'minimal') {
-        document.getElementById('cfgBg').value = '#000000';
-        document.getElementById('cfgText').value = '#e1e1e1';
-        document.getElementById('cfgAccent').value = '#ffffff';
-        document.getElementById('cfgBorderColor').value = '#222222';
-        document.getElementById('cfgBorderWidth').value = '1';
-        document.getElementById('cfgBorderStyle').value = 'solid';
-        document.getElementById('cfgFontFamily').value = 'sans-serif';
-        document.getElementById('cfgTextTransform').value = 'none';
-        document.getElementById('cfgLetterSpacing').value = '0';
-        document.getElementById('cfgRadius').value = '4';
-        document.getElementById('cfgArtRadius').value = '4';
-        document.getElementById('cfgShadow').value = 'none';
-      } else {
-        // Default
-        document.getElementById('cfgBg').value = '#121212';
-        document.getElementById('cfgText').value = '#ffffff';
-        document.getElementById('cfgAccent').value = '#1db954';
-        document.getElementById('cfgBorderColor').value = '#333333';
-        document.getElementById('cfgBorderWidth').value = '0';
-        document.getElementById('cfgBorderStyle').value = 'solid';
-        document.getElementById('cfgFontFamily').value = 'sans-serif';
-        document.getElementById('cfgTextTransform').value = 'none';
-        document.getElementById('cfgLetterSpacing').value = '0';
-        document.getElementById('cfgRadius').value = '10';
-        document.getElementById('cfgArtRadius').value = '6';
-        document.getElementById('cfgShadow').value = 'soft';
-      }
-      updatePreview();
     }
 
     function generateRandomString(length) {
@@ -1011,7 +780,6 @@
       const container = element.parentElement;
       if (container && element.scrollWidth > container.clientWidth) {
         element.classList.add('scroll');
-        // Duplicate text content for seamless marquee looping if not already done
         if (!element.dataset.duplicated) {
           element.innerHTML = `${element.innerHTML} &nbsp;&nbsp;&nbsp;&nbsp; ${element.innerHTML}`;
           element.dataset.duplicated = 'true';
@@ -1057,23 +825,8 @@
       document.getElementById('cfgBorderColorVal').textContent = borderColor;
 
       const w = document.getElementById('previewWidget');
-      
-      // Clear preset dynamic classes
-      w.classList.remove('preset-persona5', 'preset-glass', 'preset-synthwave', 'preset-cyberpunk', 'preset-gameboy');
 
-      if (currentPreset === 'persona5') {
-        w.classList.add('preset-persona5');
-      } else if (currentPreset === 'glass') {
-        w.classList.add('preset-glass');
-      } else if (currentPreset === 'synthwave') {
-        w.classList.add('preset-synthwave');
-      } else if (currentPreset === 'cyberpunk') {
-        w.classList.add('preset-cyberpunk');
-      } else if (currentPreset === 'gameboy') {
-        w.classList.add('preset-gameboy');
-      }
-
-      w.style.background = currentPreset === 'glass' ? `${bg}aa` : bg;
+      w.style.background = bg;
       w.style.color = text;
       w.style.borderRadius = `${radius}px`;
       w.style.width = `${width}px`;
@@ -1095,7 +848,7 @@
         w.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
       } else if (shadow === 'glow') {
         w.style.boxShadow = `0 0 14px ${accent}`;
-      } else if (currentPreset !== 'persona5' && currentPreset !== 'synthwave') {
+      } else {
         w.style.boxShadow = 'none';
       }
       
@@ -1132,7 +885,6 @@
           mode: 'overlay',
           cid: clientId,
           refresh: refreshToken,
-          preset: currentPreset,
           layout: layout,
           font: fontFamily,
           bg: bg.replace('#', ''),
@@ -1174,7 +926,6 @@
 
     function applyOverlaySettings(params) {
       const w = document.getElementById('overlayView');
-      const preset = params.get('preset') || 'default';
       const layout = params.get('layout') || 'horizontal';
       const font = params.get('font') || 'sans-serif';
       const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
@@ -1195,21 +946,7 @@
       const showArt = params.get('art') !== '0';
       const showBar = params.get('bar') !== '0';
 
-      w.classList.remove('preset-persona5', 'preset-glass', 'preset-synthwave', 'preset-cyberpunk', 'preset-gameboy');
-
-      if (preset === 'persona5') {
-        w.classList.add('preset-persona5');
-      } else if (preset === 'glass') {
-        w.classList.add('preset-glass');
-      } else if (preset === 'synthwave') {
-        w.classList.add('preset-synthwave');
-      } else if (preset === 'cyberpunk') {
-        w.classList.add('preset-cyberpunk');
-      } else if (preset === 'gameboy') {
-        w.classList.add('preset-gameboy');
-      }
-
-      w.style.background = preset === 'glass' ? `${bg}aa` : bg;
+      w.style.background = bg;
       w.style.color = text;
       w.style.borderRadius = `${radius}px`;
       w.style.width = `${width}px`;
@@ -1227,7 +964,7 @@
         w.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
       } else if (shadow === 'glow') {
         w.style.boxShadow = `0 0 14px ${accent}`;
-      } else if (preset !== 'persona5' && preset !== 'synthwave') {
+      } else {
         w.style.boxShadow = 'none';
       }
 
@@ -1321,11 +1058,7 @@
             const overlayWidget = document.getElementById('overlayView');
             overlayWidget.style.animation = 'none';
             overlayWidget.offsetHeight; // Reflow trigger
-            if (params.get('preset') === 'persona5') {
-              overlayWidget.style.animation = 'p5Glitch 0.4s ease-out';
-            } else {
-              overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
-            }
+            overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
 
             const trackNameText = document.getElementById('trackNameText');
             const artistEl = document.getElementById('artist');
