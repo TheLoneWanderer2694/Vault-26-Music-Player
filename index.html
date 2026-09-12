@@ -1,30 +1,451 @@
-<!-- Colors & Visual Effects -->
-<div class="section-divider">Colors & Visual Effects</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spotify Widget - OBS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --art-size: 56px;
+    --art-radius: 8px;
+    --title-size: 15px;
+    --artist-size: 13px;
+    --title-color: #ffffff;
+    --artist-color: #b3b3b3;
+    --progress-color: #1db954;
+    --bg-color: #121212;
+  }
+  body {
+    background: var(--bg-color);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 100%;
+    overflow: hidden;
+  }
+  .art {
+    width: var(--art-size);
+    height: var(--art-size);
+    border-radius: var(--art-radius);
+    background: #282828 center/cover no-repeat;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    transition: border-radius 0.3s ease;
+  }
+  .art.fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  .info { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; flex: 1; }
+  .track {
+    font-size: var(--title-size);
+    font-weight: 600;
+    color: var(--title-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .artist {
+    font-size: var(--artist-size);
+    font-weight: 400;
+    color: var(--artist-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .art-container { position: relative; }
+  .progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--progress-color);
+    width: 0%;
+    border-radius: 0 0 var(--art-radius) var(--art-radius);
+    transition: width 0.5s linear;
+  }
+  .now-playing-indicator {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    height: 14px;
+    width: 16px;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+  .now-playing-indicator span {
+    width: 3px;
+    background: var(--title-color);
+    border-radius: 1px;
+    animation: bar 0.8s ease-in-out infinite;
+  }
+  .now-playing-indicator span:nth-child(1) { height: 40%; animation-delay: -0.6s; }
+  .now-playing-indicator span:nth-child(2) { height: 80%; animation-delay: -0.3s; }
+  .now-playing-indicator span:nth-child(3) { height: 50%; animation-delay: -0.9s; }
+  @keyframes bar {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+  .hidden { display: none !important; }
+  .config-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .config-toggle:hover { background: rgba(255,255,255,0.2); }
+  .config-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 340px;
+    height: 100vh;
+    background: #181818;
+    border-left: 1px solid #333;
+    padding: 24px;
+    overflow-y: auto;
+    z-index: 99;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+  }
+  .config-panel h3 {
+    color: #1db954;
+    margin-bottom: 20px;
+    font-size: 18px;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #b3b3b3;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+    background: #121212;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+  }
+  .form-group input[type="color"] {
+    width: 100%;
+    height: 38px;
+    background: #121212;
+    border: 1px solid #333;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+  .form-row .form-group { flex: 1; }
+  .btn {
+    padding: 10px 16px;
+    background: #1db954;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .btn:hover { background: #1ed760; }
+  .btn.secondary { background: #333; color: #fff; }
+  .btn.secondary:hover { background: #444; }
+</style>
+</head>
+<body>
+  <div class="art-container" id="authTrigger" style="cursor: pointer;" title="Click to authenticate with Spotify">
+    <div class="art" id="art"></div>
+    <div class="progress" id="progress"></div>
+    <div class="now-playing-indicator" id="indicator">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="info">
+    <div class="track" id="track">Nothing playing</div>
+    <div class="artist" id="artist">Start music on Spotify</div>
+  </div>
 
-<div class="grid-3">
-  <div>
-    <label>Background</label>
-    <div class="color-picker">
-      <input type="color" id="cfgBg" value="#121212" oninput="updatePreview()" />
-      <span id="cfgBgVal">#121212</span>
+  <!-- Config Panel -->
+  <div class="config-panel" id="configPanel">
+    <h3>Widget Settings</h3>
+    <div class="form-group">
+      <label>Spotify Client ID</label>
+      <input type="text" id="clientIdInput" placeholder="Get from Spotify Dashboard">
     </div>
-    <label class="checkbox-group" style="margin-top: 6px;">
-      <input type="checkbox" id="cfgTransparentBg" onchange="updatePreview()" />
-      <span>Transparent BG</span>
-    </label>
-  </div>
-  <div>
-    <label>Title Color</label>
-    <div class="color-picker">
-      <input type="color" id="cfgText" value="#ffffff" oninput="updatePreview()" />
-      <span id="cfgTextVal">#ffffff</span>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Art Size</label>
+        <input type="number" id="artSizeInput" min="32" max="120" value="56">
+      </div>
+      <div class="form-group">
+        <label>Art Radius</label>
+        <input type="number" id="artRadiusInput" min="0" max="60" value="8">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Title Color</label>
+        <input type="color" id="titleColorInput" value="#ffffff">
+      </div>
+      <div class="form-group">
+        <label>Artist Color</label>
+        <input type="color" id="artistColorInput" value="#b3b3b3">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Progress Color</label>
+        <input type="color" id="progressColorInput" value="#1db954">
+      </div>
+      <div class="form-group">
+        <label>Background</label>
+        <input type="color" id="bgColorInput" value="#121212">
+      </div>
+    </div>
+    <div class="form-group">
+      <label><input type="checkbox" id="showIndicatorInput" checked> Show now-playing indicator</label>
+    </div>
+    <div class="form-group">
+      <label>Poll Interval (ms)</label>
+      <input type="number" id="pollIntervalInput" min="1000" max="30000" step="1000" value="5000">
+    </div>
+    <div class="form-row">
+      <button class="btn" id="saveConfigBtn">Save & Reload</button>
+      <button class="btn" id="clearAuthBtn">Clear Auth</button>
+      <button class="btn" id="closeConfigBtn">Close</button>
     </div>
   </div>
-  <div>
-    <label>Artist Color</label>
-    <div class="color-picker">
-      <input type="color" id="cfgArtistText" value="#b3b3b3" oninput="updatePreview()" />
-      <span id="cfgArtistTextVal">#b3b3b3</span>
-    </div>
-  </div>
-</div>
+
+  <button class="config-toggle" id="configToggle" title="Settings">⚙</button>
+
+<script>
+  // === Spotify Implicit Grant Flow (client-side, no server needed) ===
+  // Get your Client ID at https://developer.spotify.com/dashboard
+  let SPOTIFY_CLIENT_ID = localStorage.getItem('sw_client_id') || 'YOUR_SPOTIFY_CLIENT_ID_HERE';
+  const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname;
+  const SCOPES = ['user-read-currently-playing', 'user-read-playback-state', 'user-read-private'];
+  const TOKEN_KEY = 'sw_spotify_token';
+  const TOKEN_EXPIRY_KEY = 'sw_spotify_token_expiry';
+
+  const params = new URLSearchParams(window.location.search);
+  const config = {
+    artSize: params.get('artSize') || localStorage.getItem('sw_artSize') || '56',
+    artRadius: params.get('artRadius') || localStorage.getItem('sw_artRadius') || '8',
+    titleSize: params.get('titleSize') || localStorage.getItem('sw_titleSize') || '15',
+    artistSize: params.get('artistSize') || localStorage.getItem('sw_artistSize') || '13',
+    titleColor: params.get('titleColor') || localStorage.getItem('sw_titleColor') || '#ffffff',
+    artistColor: params.get('artistColor') || localStorage.getItem('sw_artistColor') || '#b3b3b3',
+    progressColor: params.get('progressColor') || localStorage.getItem('sw_progressColor') || '#1db954',
+    bgColor: params.get('bgColor') || localStorage.getItem('sw_bgColor') || '#121212',
+    showIndicator: params.get('showIndicator') !== 'false',
+    pollInterval: parseInt(params.get('pollInterval') || localStorage.getItem('sw_pollInterval') || '5000'),
+  };
+
+  Object.keys(config).forEach(key => {
+    document.documentElement.style.setProperty('--' + key.replace(/([A-Z])/g, '-$1').toLowerCase(), config[key]);
+  });
+
+  const art = document.getElementById('art');
+  const trackEl = document.getElementById('track');
+  const artistEl = document.getElementById('artist');
+  const progressEl = document.getElementById('progress');
+  const indicator = document.getElementById('indicator');
+  const authTrigger = document.getElementById('authTrigger');
+
+  if (!config.showIndicator) indicator.style.display = 'none';
+
+  // Click widget to authenticate
+  authTrigger.addEventListener('click', () => {
+    if (SPOTIFY_CLIENT_ID === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
+      trackEl.textContent = 'Set Client ID';
+      artistEl.textContent = 'Edit HTML source';
+      return;
+    }
+    authenticate();
+  });
+
+  let lastArtUrl = '';
+
+  function getAccessToken() {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    if (token && expiry && Date.now() < parseInt(expiry)) {
+      return token;
+    }
+    return null;
+  }
+
+  function setAccessToken(token, expiresIn) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + expiresIn * 1000));
+  }
+
+  function clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXPIRY_KEY);
+  }
+
+  function parseHash() {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const token = params.get('access_token');
+    const expiresIn = params.get('expires_in');
+    const error = params.get('error');
+    if (error) {
+      console.error('Spotify auth error:', error);
+      clearToken();
+      return null;
+    }
+    if (token && expiresIn) {
+      setAccessToken(token, parseInt(expiresIn));
+      window.location.hash = '';
+      return token;
+    }
+    return null;
+  }
+
+  function authenticate() {
+    const authUrl = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      response_type: 'token',
+      redirect_uri: SPOTIFY_REDIRECT_URI,
+      scope: SCOPES.join(' '),
+    });
+    window.location.href = authUrl;
+  }
+
+  async function apiFetch(url, token) {
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.status === 401) {
+      clearToken();
+      authenticate();
+      throw new Error('Token expired');
+    }
+    return res.json();
+  }
+
+  async function fetchStatus() {
+    let token = parseHash() || getAccessToken();
+    if (!token) {
+      if (SPOTIFY_CLIENT_ID !== 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
+        // Auto-trigger auth on first load
+        setTimeout(authenticate, 500);
+        trackEl.textContent = 'Redirecting to Spotify...';
+        artistEl.textContent = 'Please authorize the widget';
+        return;
+      }
+      trackEl.textContent = 'Connect Spotify';
+      artistEl.textContent = 'Click to authenticate';
+      return;
+    }
+    try {
+      const data = await apiFetch(
+        'https://api.spotify.com/v1/me/player/currently-playing?market=us&additional_types=track',
+        token
+      );
+      if (data && data.item) {
+        const item = data.item;
+        if (data.isPlaying) {
+          if (item.album && item.album.images && item.album.images.length) {
+            const url = item.album.images[0].url;
+            if (url !== lastArtUrl) {
+              art.style.backgroundImage = `url('${url}')`;
+              art.classList.remove('fade-in');
+              void art.offsetWidth;
+              art.classList.add('fade-in');
+              lastArtUrl = url;
+            }
+          }
+          trackEl.textContent = item.name || 'Unknown track';
+          artistEl.textContent = item.artists ? item.artists.map(a => a.name).join(', ') : 'Unknown artist';
+          if (data.duration_ms > 0) {
+            progressEl.style.width = ((item.progress_ms / data.duration_ms) * 100) + '%';
+          }
+        } else {
+          trackEl.textContent = 'Paused';
+          artistEl.textContent = item.artists ? item.artists.map(a => a.name).join(', ') : 'Nothing playing';
+          progressEl.style.width = '0%';
+        }
+      } else {
+        trackEl.textContent = 'Nothing playing';
+        artistEl.textContent = 'Press play in Spotify';
+        progressEl.style.width = '0%';
+      }
+    } catch (e) {
+      console.error('Fetch error:', e);
+      trackEl.textContent = 'Auth required';
+      artistEl.textContent = 'Click to reconnect';
+    }
+  }
+
+  fetchStatus();
+  setInterval(fetchStatus, config.pollInterval);
+
+  // === Config Panel Handlers ===
+  const configPanel = document.getElementById('configPanel');
+  const configToggle = document.getElementById('configToggle');
+
+  configToggle.addEventListener('click', () => {
+    // Populate config panel with current values
+    document.getElementById('clientIdInput').value = SPOTIFY_CLIENT_ID;
+    document.getElementById('artSizeInput').value = config.artSize;
+    document.getElementById('artRadiusInput').value = config.artRadius;
+    document.getElementById('titleColorInput').value = config.titleColor;
+    document.getElementById('artistColorInput').value = config.artistColor;
+    document.getElementById('progressColorInput').value = config.progressColor;
+    document.getElementById('bgColorInput').value = config.bgColor;
+    document.getElementById('showIndicatorInput').checked = config.showIndicator;
+    document.getElementById('pollIntervalInput').value = config.pollInterval;
+    configPanel.classList.remove('hidden');
+  });
+
+  document.getElementById('closeConfigBtn').addEventListener('click', () => {
+    configPanel.classList.add('hidden');
+  });
+
+  document.getElementById('saveConfigBtn').addEventListener('click', () => {
+    const newClientId = document.getElementById('clientIdInput').value.trim();
+    if (newClientId) {
+      localStorage.setItem('sw_client_id', newClientId);
+      SPOTIFY_CLIENT_ID = newClientId;
+    }
+    localStorage.setItem('sw_artSize', document.getElementById('artSizeInput').value);
+    localStorage.setItem('sw_artRadius', document.getElementById('artRadiusInput').value);
+    localStorage.setItem('sw_titleColor', document.getElementById('titleColorInput').value);
+    localStorage.setItem('sw_artistColor', document.getElementById('artistColorInput').value);
+    localStorage.setItem('sw_progressColor', document.getElementById('progressColorInput').value);
+    localStorage.setItem('sw_bgColor', document.getElementById('bgColorInput').value);
+    localStorage.setItem('sw_showIndicator', document.getElementById('showIndicatorInput').checked);
+    localStorage.setItem('sw_pollInterval', document.getElementById('pollIntervalInput').value);
+
+    // Reload to apply changes
+    location.reload();
+  });
+
+  document.getElementById('clearAuthBtn').addEventListener('click', () => {
+    clearToken();
+    configPanel.classList.add('hidden');
+    location.reload();
+  });
+</script>
+</body>
+</html>
