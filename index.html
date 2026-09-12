@@ -206,7 +206,7 @@
 
     .widget.layout-vertical {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
     }
 
     .widget.layout-vertical .album-art {
@@ -239,6 +239,7 @@
       overflow: hidden;
       white-space: nowrap;
       position: relative;
+      width: 100%;
     }
 
     .marquee-text {
@@ -855,15 +856,18 @@
       const titleEl = document.getElementById('prevTitle');
       const artistEl = document.getElementById('prevArtist');
 
+      // Set alignment on parent marquee containers so inline-block children align correctly
+      document.querySelectorAll('.preview-box .text-marquee-container').forEach(el => {
+        el.style.textAlign = textAlign;
+      });
+
       titleEl.style.fontSize = `${fontSize}px`;
-      titleEl.style.textAlign = textAlign;
       titleEl.style.textTransform = textTransform;
       titleEl.style.letterSpacing = `${letterSpacing}px`;
 
       artistEl.style.color = text;
       artistEl.style.opacity = '0.75';
       artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
-      artistEl.style.textAlign = textAlign;
       artistEl.style.textTransform = textTransform;
       artistEl.style.letterSpacing = `${letterSpacing}px`;
       
@@ -971,15 +975,18 @@
       const titleEl = document.getElementById('title');
       const artistEl = document.getElementById('artist');
 
+      // Apply text alignment to overlay marquee containers
+      document.querySelectorAll('#overlayView .text-marquee-container').forEach(el => {
+        el.style.textAlign = textAlign;
+      });
+
       titleEl.style.fontSize = `${fontSize}px`;
-      titleEl.style.textAlign = textAlign;
       titleEl.style.textTransform = textTransform;
       titleEl.style.letterSpacing = `${letterSpacing}px`;
 
       artistEl.style.color = text;
       artistEl.style.opacity = '0.75';
       artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
-      artistEl.style.textAlign = textAlign;
       artistEl.style.textTransform = textTransform;
       artistEl.style.letterSpacing = `${letterSpacing}px`;
 
