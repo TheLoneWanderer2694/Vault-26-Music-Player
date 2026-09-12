@@ -96,10 +96,12 @@
     .btn-secondary { background: #282828; color: var(--text); }
     .btn-secondary:hover { background: #3e3e3e; }
 
-    /* Strict Hide Utilities */
-    .hidden,
-    [hidden] {
-      display: none !important;
+    /* Strict Step Visibility */
+    .step-page {
+      display: none;
+    }
+    .step-page.active {
+      display: block;
     }
 
     /* Live Preview Box */
@@ -117,7 +119,7 @@
       border: 1px solid #282828;
     }
 
-    /* Widget Components */
+    /* Shared Widget Component Styles */
     .widget {
       display: flex;
       align-items: center;
@@ -134,7 +136,7 @@
     .bar { width: 100%; height: 3px; border-radius: 2px; margin-top: 8px; overflow: hidden; }
     .fill { height: 100%; width: 50%; transition: width 0.4s linear; }
 
-    /* Overlay Mode Styles */
+    /* OBS Overlay Mode Override */
     body.overlay-mode {
       background: transparent !important;
       overflow: hidden;
@@ -145,6 +147,7 @@
     }
 
     body.overlay-mode #overlayView {
+      display: flex !important;
       position: absolute;
       top: 0;
       left: 0;
@@ -163,7 +166,7 @@
     <div class="card">
       
       <!-- STEP 1: AUTHENTICATION -->
-      <div id="pageAuth">
+      <div id="pageAuth" class="step-page active">
         <div class="page-header">
           <h1 class="page-title">Spotify OBS Overlay</h1>
           <span class="step-badge">Step 1 of 3</span>
@@ -180,7 +183,7 @@
       </div>
 
       <!-- STEP 2: CUSTOMIZE WIDGET -->
-      <div id="pageCustomize" class="hidden">
+      <div id="pageCustomize" class="step-page">
         <div class="page-header">
           <h1 class="page-title">Customize Widget</h1>
           <span class="step-badge">Step 2 of 3</span>
@@ -260,12 +263,13 @@
         </label>
 
         <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToPage('pageAuth')">&larr; Back to Step 1</button>
           <button class="btn" onclick="goToPage('pageExport')">Next: Export URL &rarr;</button>
         </div>
       </div>
 
       <!-- STEP 3: EXPORT LINK -->
-      <div id="pageExport" class="hidden">
+      <div id="pageExport" class="step-page">
         <div class="page-header">
           <h1 class="page-title">Export to OBS</h1>
           <span class="step-badge">Step 3 of 3</span>
@@ -285,7 +289,7 @@
   </div>
 
   <!-- OBS OVERLAY WIDGET VIEW -->
-  <div id="overlayView" class="widget hidden" hidden>
+  <div id="overlayView" class="widget">
     <img id="albumArt" class="album-art" src="" alt="Album Art" />
     <div class="info">
       <div id="title" class="title">Loading...</div>
@@ -311,15 +315,6 @@
       // 1. OBS OVERLAY MODE
       if (isOverlayMode) {
         document.body.classList.add('overlay-mode');
-        
-        const dashboard = document.getElementById('dashboardView');
-        const overlay = document.getElementById('overlayView');
-        if (dashboard) dashboard.classList.add('hidden');
-        if (overlay) {
-          overlay.classList.remove('hidden');
-          overlay.removeAttribute('hidden');
-        }
-
         const clientId = urlParams.get('cid');
         const refreshToken = urlParams.get('refresh');
         
@@ -337,11 +332,6 @@
       // 3. DASHBOARD SETUP VIEW
       else {
         document.body.classList.remove('overlay-mode');
-        const overlay = document.getElementById('overlayView');
-        if (overlay) {
-          overlay.classList.add('hidden');
-          overlay.setAttribute('hidden', '');
-        }
 
         const savedClientId = localStorage.getItem('spotify_client_id');
         const savedRefreshToken = localStorage.getItem('spotify_refresh_token');
@@ -358,16 +348,16 @@
       }
     });
 
-    // Page Navigation Logic
+    // Navigation Control: Shows exactly ONE step page at a time
     function goToPage(pageId) {
-      const pages = ['pageAuth', 'pageCustomize', 'pageExport'];
-      pages.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
+      document.querySelectorAll('.step-page').forEach(page => {
+        page.classList.remove('active');
       });
 
       const target = document.getElementById(pageId);
-      if (target) target.classList.remove('hidden');
+      if (target) {
+        target.classList.add('active');
+      }
 
       if (pageId === 'pageCustomize' || pageId === 'pageExport') {
         updatePreview();
@@ -443,7 +433,7 @@
           window.history.replaceState({}, document.title, window.location.pathname);
           goToPage('pageCustomize');
         } else {
-          alert('Failed to obtain refresh token from Spotify. Check your Redirect URI in Spotify Developer Dashboard.');
+          alert('Failed to obtain refresh token from Spotify. Check that your Redirect URI matches in Spotify Developer Dashboard.');
         }
       } catch (e) {
         alert('Authentication error: ' + e.message);
