@@ -1,40 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spotify OBS Overlay & Twitch Request Engine</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlay Generator & Display</title>
   <style>
-    :root {
-      --bg: #121212;
-      --card-bg: #181818;
-      --accent: #1DB954;
-      --text: #ffffff;
-      --subtext: #b3b3b3;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      padding: 20px;
+      background-color: #121214;
+      color: #e1e1e6;
     }
 
-    /* Generator Dashboard UI */
     .dashboard {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel {
+      background-color: #202024;
+      border: 1px solid #323238;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+      color: #00b37e;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #323238;
+      background-color: #121214;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .preview-container {
+      border: 2px dashed #323238;
+      border-radius: 8px;
+      padding: 20px;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-      box-sizing: border-box;
+      background-color: #09090a;
+      overflow: hidden;
+      min-height: 200px;
     }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 32px;
-      max-width: 680px;
+    /* Target overlay element */
+    #overlay-container {
+      width: 100%;
+      height: 200px; /* Default fallback */
+      background: linear-gradient(135deg, #8257e5, #00b37e);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: height 0.2s ease, width 0.2s ease;
+    }
+
+    .url-output {
+      word-break: break-all;
+      background-color: #121214;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      border: 1px solid #323238;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard">
+    <!-- Controls Panel -->
+    <div class="panel">
+      <h2>Overlay Configuration</h2>
+      
+      <div class="form-group">
+        <label for="height-input">Container Height (px):</label>
+        <input 
+          type="number" 
+          id="height-input" 
+          name="height" 
+          min="50" 
+          max="2160" 
+          value="200" 
+          placeholder="e.g. 300"
+          oninput="updateSettings()" 
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="width-input">Container Width (px or %):</label>
+        <input 
+          type="text" 
+          id="width-input" 
+          name="width" 
+          value="100%" 
+          placeholder="e.g. 400px or 100%"
+          oninput="updateSettings()" 
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Generated Query Link:</label>
+        <div id="url-display" class="url-output"></div>
+      </div>
+    </div>
+
+    <!-- Live Preview Panel -->
+    <div class="panel">
+      <h2>Live Preview</h2>
+      <div class="preview-container">
+        <div id="overlay-container">
+          <span id="dimension-label">Height: 200px</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Update Preview and URL Parameters when input changes
+    function updateSettings() {
+      const heightVal = document.getElementById('height-input').value;
+      const widthVal = document.getElementById('width-input').value;
+      
+      const params = new URLSearchParams(window.location.search);
+      
+      if (heightVal) params.set('h', heightVal);
+      if (widthVal) params.set('w', widthVal);
+
+      // Update browser URL without re-loading the page
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+
+      // Refresh displayed URL string
+      document.getElementById('url-display').innerText = window.location.href;
+
+      // Apply changes live
+      applyOverlaySettings();
+    }
+
+    // 2. Read parameters and update element styles
+    function applyOverlaySettings() {
+      const params = new URLSearchParams(window.location.search);
+      const container = document.getElementById('overlay-container');
+      const label = document.getElementById('dimension-label');
+
+      if (!container) return;
+
+      // Height logic
+      if (params.has('h')) {
+        const height = params.get('h');
+        const formattedHeight = isNaN(height) ? height : `${height}px`;
+        container.style.height = formattedHeight;
+        
+        // Sync input field value if accessed via direct URL param
+        document.getElementById('height-input').value = height;
+      }
+
+      // Width logic
+      if (params.has('w')) {
+        const width = params.get('w');
+        const formattedWidth = isNaN(width) ? width : `${width}px`;
+        container.style.width = formattedWidth;
+
+        // Sync input field value if accessed via direct URL param
+        document.getElementById('width-input').value = width;
+      }
+
+      // Update text inside the preview box
+      if (label) {
+        label.innerText = `Height: ${container.offsetHeight}px | Width: ${container.offsetWidth}px`;
+      }
+    }
+
+    // 3. Initialize settings on initial page load
+    document.addEventListener('DOMContentLoaded', () => {
+      applyOverlaySettings();
+      document.getElementById('url-display').innerText = window.location.href;
+    });
+  </script>
+</body>
+</html>      max-width: 680px;
       width: 100%;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
