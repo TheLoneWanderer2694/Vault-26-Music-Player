@@ -14,7 +14,7 @@
     --title-color: #ffffff;
     --artist-color: #b3b3b3;
     --progress-color: #1db954;
-    --bg-color: #121212;
+    --bg-color: transparent; /* Set to transparent by default for OBS */
   }
   body {
     background: var(--bg-color);
@@ -23,7 +23,8 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    height: 100%;
+    height: 100vh;
+    padding: 10px;
     overflow: hidden;
   }
   .art {
@@ -216,8 +217,8 @@
         <input type="color" id="progressColorInput" value="#1db954">
       </div>
       <div class="form-group">
-        <label>Background</label>
-        <input type="color" id="bgColorInput" value="#121212">
+        <label>Background (Hex or leave)</label>
+        <input type="text" id="bgColorInput" value="transparent" placeholder="transparent or #121212">
       </div>
     </div>
     <div class="form-group">
@@ -254,7 +255,7 @@
     titleColor: params.get('titleColor') || localStorage.getItem('sw_titleColor') || '#ffffff',
     artistColor: params.get('artistColor') || localStorage.getItem('sw_artistColor') || '#b3b3b3',
     progressColor: params.get('progressColor') || localStorage.getItem('sw_progressColor') || '#1db954',
-    bgColor: params.get('bgColor') || localStorage.getItem('sw_bgColor') || '#121212',
+    bgColor: params.get('bgColor') || localStorage.getItem('sw_bgColor') || 'transparent',
     showIndicator: params.get('showIndicator') !== 'false' && (localStorage.getItem('sw_showIndicator') !== 'false'),
     pollInterval: parseInt(params.get('pollInterval') || localStorage.getItem('sw_pollInterval') || '5000'),
   };
