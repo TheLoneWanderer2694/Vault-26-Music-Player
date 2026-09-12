@@ -304,7 +304,7 @@
   </div>
 
   <script>
-    // Scopes needed for song request queueing & currently playing
+    // Scopes needed for song request queueing, clearing queue, and playback control
     const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const REDIRECT_URI = window.location.origin + window.location.pathname;
 
@@ -646,9 +646,14 @@
           const textIndex = msg.indexOf(`PRIVMSG #${channelName} :`);
           if (textIndex !== -1) {
             const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
+            const lowerMsg = chatText.toLowerCase();
 
-            // Match !request command
-            if (chatText.toLowerCase().startsWith('!request ')) {
+            // 1. Clear Queue Command
+            if (lowerMsg === '!clearqueue' || lowerMsg === '!clear') {
+              clearSpotifyQueue();
+            }
+            // 2. Request Song Command
+            else if (lowerMsg.startsWith('!request ')) {
               const query = chatText.substring(9).trim();
               if (query.length > 0) {
                 processSongRequest(query);
@@ -664,7 +669,6 @@
       if (!activeSpotifyToken) return;
 
       try {
-        // Search track on Spotify
         const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
           headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
         });
@@ -674,13 +678,41 @@
 
         if (!track) return;
 
-        // Post track URI to playback queue
         await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(track.uri)}`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
         });
       } catch (e) {
         console.error('Song request processing failed:', e);
+      }
+    }
+
+    // Clear Spotify Queue Engine
+    async function clearSpotifyQueue() {
+      if (!activeSpotifyToken) return;
+
+      try {
+        // Fetch current queue contents
+        const queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+
+        if (!queueRes.ok) return;
+
+        const queueData = await queueRes.json();
+        const queuedTracks = queueData.queue || [];
+
+        // Skip forward through all queued items
+        for (let i = 0; i < queuedTracks.length; i++) {
+          await fetch('https://api.spotify.com/v1/me/player/next', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+          });
+          // Short delay between API calls to prevent rate-limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      } catch (e) {
+        console.error('Failed to clear queue:', e);
       }
     }
   </script>
