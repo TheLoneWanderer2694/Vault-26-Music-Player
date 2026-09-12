@@ -1,128 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OBS Overlay with Queue</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      background-color: transparent;
-      color: #ffffff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden;
-    }
+<!-- Queue Settings -->
+<div class="section-divider">Queue Settings</div>
 
-    #overlay-container {
-      width: 300px;
-      background: rgba(15, 15, 20, 0.85);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .header {
-      font-size: 1.1rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-      color: #a78bfa;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #queue-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    #queue-list li {
-      background: rgba(255, 255, 255, 0.05);
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      border-left: 3px solid #8b5cf6;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: all 0.2s ease;
-    }
-
-    #queue-list li:first-child {
-      border-left-color: #10b981;
-      background: rgba(16, 185, 129, 0.1);
-      font-weight: 600;
-    }
-
-    #queue-list li .user {
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-
-    .empty-message {
-      color: #6b7280;
-      font-style: italic;
-      font-size: 0.9rem;
-    }
-  </style>
-  <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-
-  <div id="overlay-container">
-    <div class="header">Up Next</div>
-    <ul id="queue-list">
-      <li class="empty-message">Queue is empty</li>
-    </ul>
+<div class="grid-3">
+  <div>
+    <label>Queue Header Color</label>
+    <div class="color-picker">
+      <input type="color" id="cfgQueueHeader" value="#ffffff" oninput="updatePreview()" />
+      <span id="cfgQueueHeaderVal">#ffffff</span>
+    </div>
   </div>
-
-  <script>
-    const socket = io();
-
-    function renderQueue(queueData) {
-      const queueList = document.getElementById('queue-list');
-      queueList.innerHTML = '';
-
-      if (!queueData || queueData.length === 0) {
-        queueList.innerHTML = '<li class="empty-message">Queue is empty</li>';
-        return;
-      }
-
-      queueData.forEach((item, index) => {
-        const li = document.createElement('li');
-        
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = item.title || item.name || `Item #${index + 1}`;
-        li.appendChild(titleSpan);
-
-        if (item.user || item.requestedBy) {
-          const userSpan = document.createElement('span');
-          userSpan.className = 'user';
-          userSpan.textContent = item.user || item.requestedBy;
-          li.appendChild(userSpan);
-        }
-
-        queueList.appendChild(li);
-      });
-    }
-
-    socket.on('queueUpdated', (data) => {
-      renderQueue(data.queue || data);
-    });
-
-    socket.on('connect', () => {
-      console.log('Connected to server overlay socket');
-    });
-  </script>
-
-</body>
-</html>
+  <div>
+    <label>Queue Text Color</label>
+    <div class="color-picker">
+      <input type="color" id="cfgQueueText" value="#b3b3b3" oninput="updatePreview()" />
+      <span id="cfgQueueTextVal">#b3b3b3</span>
+    </div>
+  </div>
+  <div>
+    <label class="checkbox-group" style="margin-top: 22px;">
+      <input type="checkbox" id="cfgShowQueue" checked onchange="updatePreview()" />
+      <span>Show Up Next Queue</span>
+    </label>
+  </div>
+</div>
