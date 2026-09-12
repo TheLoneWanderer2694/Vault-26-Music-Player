@@ -392,7 +392,7 @@
               <div class="text-marquee-container">
                 <div id="prevArtist" class="artist marquee-text">Artist Name</div>
               </div>
-              <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
+              <div id="prevBar" class="bar"><div id="fill" class="fill"></div></div>
             </div>
           </div>
         </div>
@@ -537,6 +537,11 @@
             <input type="number" id="cfgHideDelay" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = instant" />
           </div>
         </div>
+
+        <!-- Fallback Playlist -->
+        <div class="section-divider">Fallback / Preset Playlist</div>
+        <label for="cfgFallbackPlaylist">Spotify Playlist ID or Link (Plays when queue is empty)</label>
+        <input type="text" id="cfgFallbackPlaylist" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M or spotify:playlist:..." oninput="updatePreview()" />
 
         <!-- Elements Display Options -->
         <div class="section-divider">Visible Components</div>
@@ -799,6 +804,18 @@
       }
     }
 
+    function extractPlaylistId(input) {
+      if (!input) return '';
+      let str = input.trim();
+      if (str.includes('spotify:playlist:')) {
+        return str.split('spotify:playlist:')[1].split('?')[0];
+      }
+      if (str.includes('/playlist/')) {
+        return str.split('/playlist/')[1].split('?')[0];
+      }
+      return str;
+    }
+
     function updatePreview() {
       const layout = document.getElementById('cfgLayout').value;
       const fontFamily = document.getElementById('cfgFontFamily').value;
@@ -821,6 +838,7 @@
       const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
       const showArt = document.getElementById('cfgShowArt').checked;
       const showBar = document.getElementById('cfgShowBar').checked;
+      const fallbackPlaylist = extractPlaylistId(document.getElementById('cfgFallbackPlaylist').value);
 
       // Advanced Params
       const reqCmd = document.getElementById('cfgReqCmd').value.trim() || '!request';
@@ -844,14 +862,12 @@
       w.style.fontFamily = fontFamily;
       w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
 
-      // Layout Adjustment
       if (layout === 'vertical') {
         w.classList.add('layout-vertical');
       } else {
         w.classList.remove('layout-vertical');
       }
 
-      // Drop Shadows
       if (shadow === 'soft') {
         w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
       } else if (shadow === 'hard') {
@@ -865,7 +881,6 @@
       const titleEl = document.getElementById('prevTitle');
       const artistEl = document.getElementById('prevArtist');
 
-      // Set alignment on parent marquee containers so inline-block children align correctly
       document.querySelectorAll('.preview-box .text-marquee-container').forEach(el => {
         el.style.textAlign = textAlign;
       });
@@ -919,6 +934,7 @@
           channel: channel,
           art: showArt ? '1' : '0',
           bar: showBar ? '1' : '0',
+          fallback: fallbackPlaylist,
           reqcmd: reqCmd,
           clearcmd: clearCmd,
           reqperm: reqPerm,
@@ -984,7 +1000,6 @@
       const titleEl = document.getElementById('title');
       const artistEl = document.getElementById('artist');
 
-      // Apply text alignment to overlay marquee containers
       document.querySelectorAll('#overlayView .text-marquee-container').forEach(el => {
         el.style.textAlign = textAlign;
       });
@@ -1009,10 +1024,12 @@
 
     let activeSpotifyToken = null;
     let lastTrackId = null;
+    let isTriggeringFallback = false;
 
     function initOverlay(clientId, refreshToken, params) {
       let pausedTimestamp = null;
       const hideDelayMs = (parseInt(params.get('delay')) || 0) * 1000;
+      const fallbackPlaylistId = params.get('fallback');
 
       async function refreshAccessToken() {
         try {
@@ -1030,12 +1047,37 @@
         } catch (e) {}
       }
 
+      async function triggerFallbackPlaylist() {
+        if (!fallbackPlaylistId || !activeSpotifyToken || isTriggeringFallback) return;
+        isTriggeringFallback = true;
+        try {
+          await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${activeSpotifyToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              context_uri: `spotify:playlist:${fallbackPlaylistId}`
+            })
+          });
+        } catch (e) {
+          console.error('Failed to trigger fallback playlist:', e);
+        } finally {
+          setTimeout(() => { isTriggeringFallback = false; }, 5000);
+        }
+      }
+
       function handlePlaybackStopped() {
-        if (!pausedTimestamp) pausedTimestamp = Date.now();
-        const elapsed = Date.now() - pausedTimestamp;
-        if (elapsed >= hideDelayMs) {
-          document.getElementById('overlayView').style.opacity = '0';
-          document.getElementById('overlayView').style.transform = 'translateY(10px)';
+        if (fallbackPlaylistId) {
+          triggerFallbackPlaylist();
+        } else {
+          if (!pausedTimestamp) pausedTimestamp = Date.now();
+          const elapsed = Date.now() - pausedTimestamp;
+          if (elapsed >= hideDelayMs) {
+            document.getElementById('overlayView').style.opacity = '0';
+            document.getElementById('overlayView').style.transform = 'translateY(10px)';
+          }
         }
       }
 
@@ -1070,10 +1112,9 @@
           if (currentTrackId !== lastTrackId) {
             lastTrackId = currentTrackId;
 
-            // Trigger re-entry entrance keyframe animation
             const overlayWidget = document.getElementById('overlayView');
             overlayWidget.style.animation = 'none';
-            overlayWidget.offsetHeight; // Reflow trigger
+            overlayWidget.offsetHeight;
             overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
 
             const trackNameText = document.getElementById('trackNameText');
