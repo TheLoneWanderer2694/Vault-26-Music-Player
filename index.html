@@ -1,96 +1,1306 @@
-<script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/185/tmi.min.js"></script>
-<script>
-  // Replace with your Twitch channel name and Spotify API Access Token
-  const TWITCH_CHANNEL = 'YOUR_TWITCH_CHANNEL';
-  const SPOTIFY_ACCESS_TOKEN = 'YOUR_SPOTIFY_ACCESS_TOKEN';
-
-  // Initialize tmi.js client
-  const client = new tmi.Client({
-    channels: [TWITCH_CHANNEL]
-  });
-
-  client.connect();
-
-  // Listen for Twitch Chat Commands
-  client.on('message', (channel, tags, message, self) => {
-    if (self) return;
-
-    const command = message.trim().toLowerCase();
-
-    switch (command) {
-      case '!play':
-        controlSpotifyPlayback('play');
-        break;
-      case '!pause':
-        controlSpotifyPlayback('pause');
-        break;
-      case '!next':
-      case '!skip':
-        controlSpotifyPlayback('next');
-        break;
-      case '!previous':
-      case '!prev':
-      case '!back':
-        controlSpotifyPlayback('previous');
-        break;
-      case '!clearqueue':
-        clearSpotifyQueue();
-        break;
-    }
-  });
-
-  // Function to execute Playback API endpoints (Play, Pause, Next, Previous)
-  async function controlSpotifyPlayback(action) {
-    let endpoint = '';
-    let method = 'POST';
-
-    switch (action) {
-      case 'play':
-        endpoint = 'https://api.spotify.com/v1/me/player/play';
-        method = 'PUT';
-        break;
-      case 'pause':
-        endpoint = 'https://api.spotify.com/v1/me/player/pause';
-        method = 'PUT';
-        break;
-      case 'next':
-        endpoint = 'https://api.spotify.com/v1/me/player/next';
-        method = 'POST';
-        break;
-      case 'previous':
-        endpoint = 'https://api.spotify.com/v1/me/player/previous';
-        method = 'POST';
-        break;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spotify OBS Overlay & Twitch Request Engine</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card-bg: #181818;
+      --accent: #1DB954;
+      --text: #ffffff;
+      --subtext: #b3b3b3;
     }
 
-    try {
-      const response = await fetch(endpoint, {
-        method: method,
-        headers: {
-          'Authorization': `Bearer ${SPOTIFY_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* Generator Dashboard UI */
+    .dashboard {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      animation: cardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #282828;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .page-title { font-size: 20px; font-weight: bold; margin: 0; }
+    .step-badge { font-size: 12px; background: #282828; color: var(--subtext); padding: 4px 10px; border-radius: 12px; }
+
+    p { color: var(--subtext); font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+    
+    label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; color: var(--subtext); letter-spacing: 0.5px; }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #282828;
+      border: 1px solid #3e3e3e;
+      border-radius: 6px;
+      color: #fff;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.25);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .color-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: #282828; padding: 4px 10px; border-radius: 6px; border: 1px solid #3e3e3e; }
+    .color-picker input[type="color"] { border: none; background: transparent; width: 28px; height: 28px; cursor: pointer; padding: 0; }
+    .color-picker span { font-size: 12px; color: #fff; }
+
+    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; }
+    .checkbox-group input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+    .checkbox-group span { font-size: 13px; color: var(--text); }
+
+    .section-divider {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin: 20px 0 12px 0;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #333;
+    }
+
+    .advanced-toggle {
+      background: #222222;
+      border: 1px solid #333;
+      color: var(--accent);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      margin-bottom: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background 0.2s ease;
+    }
+
+    .advanced-toggle:hover { background: #282828; }
+
+    .advanced-panel {
+      display: none;
+      background: #141414;
+      border: 1px solid #282828;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 20px;
+      animation: panelSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes panelSlideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .advanced-panel.open { display: block; }
+
+    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #1ed760;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(29, 185, 84, 0.3);
+    }
+
+    .btn:active { transform: translateY(0); }
+    .btn-secondary { background: #282828; color: var(--text); }
+    .btn-secondary:hover { background: #3e3e3e; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+
+    .step-page { display: none; }
+    .step-page.active {
+      display: block;
+      animation: pageSwitch 0.35s ease forwards;
+    }
+
+    @keyframes pageSwitch {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Live Preview Box */
+    .preview-box {
+      background: #000;
+      background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      padding: 30px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      border: 1px solid #282828;
+      min-height: 140px;
+      overflow: hidden;
+    }
+
+    /* Base Widget Structure */
+    .widget {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      margin: 0;
+      box-sizing: border-box;
+      transition: opacity 0.5s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .widget.layout-vertical {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .widget.layout-vertical .album-art {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
+
+    .widget.layout-vertical .info {
+      width: 100%;
+    }
+
+    .album-art {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      background: #282828;
+      flex-shrink: 0;
+      transition: transform 0.3s ease, border-radius 0.3s ease;
+    }
+
+    .widget:hover .album-art {
+      transform: scale(1.04);
+    }
+
+    .info { flex: 1; min-width: 0; position: relative; }
+
+    /* Animated Marquee Container for Text Overflow */
+    .text-marquee-container {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      width: 100%;
+    }
+
+    .marquee-text {
+      display: inline-block;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    .marquee-text.scroll {
+      animation: marqueeScroll 8s linear infinite;
+    }
+
+    @keyframes marqueeScroll {
+      0% { transform: translateX(0%); }
+      15% { transform: translateX(0%); }
+      85% { transform: translateX(-50%); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .title { font-weight: bold; }
+    .artist { margin-top: 2px; }
+
+    /* Audio Equalizer Animated Wave */
+    .eq-wave {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .eq-bar {
+      width: 2px;
+      background-color: currentColor;
+      border-radius: 1px;
+      animation: eqBounce 1.2s ease-in-out infinite alternate;
+    }
+
+    .eq-bar:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+    .eq-bar:nth-child(2) { height: 100%; animation-delay: 0.3s; }
+    .eq-bar:nth-child(3) { height: 60%; animation-delay: 0.2s; }
+
+    @keyframes eqBounce {
+      0% { height: 20%; }
+      100% { height: 100%; }
+    }
+
+    .bar {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .fill {
+      height: 100%;
+      width: 50%;
+      transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      position: relative;
+    }
+
+    .fill::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 8px;
+      background: #ffffff;
+      opacity: 0.6;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #ffffff;
+    }
+
+    /* OBS Overlay Mode Override */
+    body.overlay-mode {
+      background: transparent !important;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.overlay-mode #dashboardView { display: none !important; }
+
+    body.overlay-mode #overlayView {
+      display: flex !important;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      margin: 0;
+      z-index: 9999;
+    }
+
+    body:not(.overlay-mode) #overlayView { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- DASHBOARD SETUP VIEW -->
+  <div id="dashboardView" class="dashboard">
+    <div class="card">
+      
+      <!-- STEP 1: AUTHENTICATION -->
+      <div id="pageAuth" class="step-page active">
+        <div class="page-header">
+          <h1 class="page-title">Spotify OBS Overlay</h1>
+          <span class="step-badge">Step 1 of 3</span>
+        </div>
+        <p>Log in with your Spotify Client ID to generate your custom stream overlay widget.</p>
+
+        <label for="clientIdInput">Spotify Client ID</label>
+        <input type="text" id="clientIdInput" placeholder="Paste Client ID from Spotify Developer Dashboard" />
+
+        <label>Redirect URI to add in Spotify Dashboard</label>
+        <input type="text" id="redirectUriDisplay" readonly />
+
+        <button class="btn" onclick="startAuth()">Connect Spotify Account</button>
+      </div>
+
+      <!-- STEP 2: CUSTOMIZE WIDGET -->
+      <div id="pageCustomize" class="step-page">
+        <div class="page-header">
+          <h1 class="page-title">Customize Widget</h1>
+          <span class="step-badge">Step 2 of 3</span>
+        </div>
+
+        <!-- Live Preview -->
+        <label>Live Preview</label>
+        <div class="preview-box">
+          <div id="previewWidget" class="widget">
+            <img id="prevAlbumArt" class="album-art" src="https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b5485a036e" alt="Preview Art" />
+            <div class="info">
+              <div class="text-marquee-container">
+                <div id="prevTitle" class="title marquee-text">
+                  Song Title
+                  <span class="eq-wave">
+                    <span class="eq-bar"></span>
+                    <span class="eq-bar"></span>
+                    <span class="eq-bar"></span>
+                  </span>
+                </div>
+              </div>
+              <div class="text-marquee-container">
+                <div id="prevArtist" class="artist marquee-text">Artist Name</div>
+              </div>
+              <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layout & Typography Settings -->
+        <div class="section-divider">Layout & Typography</div>
+        
+        <div class="grid-2">
+          <div>
+            <label for="cfgLayout">Widget Layout</label>
+            <select id="cfgLayout" onchange="updatePreview()">
+              <option value="horizontal" selected>Horizontal (Compact)</option>
+              <option value="vertical">Vertical (Card)</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgFontFamily">Font Family</label>
+            <select id="cfgFontFamily" onchange="updatePreview()">
+              <option value="sans-serif" selected>Sans-Serif (Modern)</option>
+              <option value="serif">Serif (Classic)</option>
+              <option value="monospace">Monospace (Retro)</option>
+              <option value="'Impact', sans-serif">Impact (Bold High-Contrast)</option>
+              <option value="'Trebuchet MS', sans-serif">Trebuchet MS (Stylized)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label for="cfgWidth">Width (px)</label>
+            <input type="text" id="cfgWidth" value="320" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgFontSize">Font Size (px)</label>
+            <input type="text" id="cfgFontSize" value="13" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgPadding">Padding (px)</label>
+            <input type="text" id="cfgPadding" value="10" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label for="cfgTextAlign">Text Align</label>
+            <select id="cfgTextAlign" onchange="updatePreview()">
+              <option value="left" selected>Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgTextTransform">Text Transform</label>
+            <select id="cfgTextTransform" onchange="updatePreview()">
+              <option value="none" selected>Normal</option>
+              <option value="uppercase">UPPERCASE</option>
+              <option value="capitalize">Capitalize</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgLetterSpacing">Letter Spacing (px)</label>
+            <input type="text" id="cfgLetterSpacing" value="0" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <!-- Colors & Effects -->
+        <div class="section-divider">Colors & Visual Effects</div>
+
+        <div class="grid-3">
+          <div>
+            <label>Background</label>
+            <div class="color-picker">
+              <input type="color" id="cfgBg" value="#121212" oninput="updatePreview()" />
+              <span id="cfgBgVal">#121212</span>
+            </div>
+          </div>
+          <div>
+            <label>Text</label>
+            <div class="color-picker">
+              <input type="color" id="cfgText" value="#ffffff" oninput="updatePreview()" />
+              <span id="cfgTextVal">#ffffff</span>
+            </div>
+          </div>
+          <div>
+            <label>Accent Bar</label>
+            <div class="color-picker">
+              <input type="color" id="cfgAccent" value="#1db954" oninput="updatePreview()" />
+              <span id="cfgAccentVal">#1db954</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Borders & Shadows -->
+        <div class="section-divider">Borders & Shadows</div>
+
+        <div class="grid-3">
+          <div>
+            <label>Border Color</label>
+            <div class="color-picker">
+              <input type="color" id="cfgBorderColor" value="#333333" oninput="updatePreview()" />
+              <span id="cfgBorderColorVal">#333333</span>
+            </div>
+          </div>
+          <div>
+            <label for="cfgBorderWidth">Border Width (px)</label>
+            <input type="text" id="cfgBorderWidth" value="0" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgBorderStyle">Border Style</label>
+            <select id="cfgBorderStyle" onchange="updatePreview()">
+              <option value="solid" selected>Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+              <option value="double">Double</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="cfgRadius">Widget Corner Radius (px)</label>
+            <input type="text" id="cfgRadius" value="10" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgArtRadius">Album Cover Radius (px)</label>
+            <input type="text" id="cfgArtRadius" value="6" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="cfgShadow">Drop Shadow</label>
+            <select id="cfgShadow" onchange="updatePreview()">
+              <option value="none">None</option>
+              <option value="soft" selected>Soft Shadow</option>
+              <option value="hard">Hard Offset Block</option>
+              <option value="glow">Accent Glow</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgHideDelay">Hide Delay when Paused (s)</label>
+            <input type="number" id="cfgHideDelay" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = instant" />
+          </div>
+        </div>
+
+        <!-- Fallback Playlist -->
+        <div class="section-divider">Fallback / Preset Playlist</div>
+        <label for="cfgFallbackPlaylist">Spotify Playlist ID or Link (Plays when queue is empty)</label>
+        <input type="text" id="cfgFallbackPlaylist" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M or spotify:playlist:..." oninput="updatePreview()" />
+
+        <!-- Elements Display Options -->
+        <div class="section-divider">Visible Components</div>
+
+        <div class="grid-2">
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowArt" checked onchange="updatePreview()" />
+            <span>Album Cover Art</span>
+          </label>
+
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowBar" checked onchange="updatePreview()" />
+            <span>Progress Bar</span>
+          </label>
+        </div>
+
+        <!-- Twitch & Commands -->
+        <div class="section-divider">Twitch Integration</div>
+        <label for="cfgTwitchChannel">Twitch Channel Username</label>
+        <input type="text" id="cfgTwitchChannel" placeholder="e.g. your_twitch_channel" oninput="updatePreview()" />
+
+        <!-- ADVANCED SETTINGS TOGGLE -->
+        <button class="advanced-toggle" type="button" onclick="toggleAdvanced()">
+          <span>⚙️ Advanced Command Permissions & Limits</span>
+          <span id="advArrow">▼</span>
+        </button>
+
+        <!-- ADVANCED SETTINGS PANEL -->
+        <div id="advancedPanel" class="advanced-panel">
+          <div class="grid-2">
+            <div>
+              <label for="cfgReqCmd">Song Request Command</label>
+              <input type="text" id="cfgReqCmd" value="!request" oninput="updatePreview()" />
+            </div>
+            <div>
+              <label for="cfgClearCmd">Clear Queue Command</label>
+              <input type="text" id="cfgClearCmd" value="!clearqueue" oninput="updatePreview()" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label for="cfgReqPerm">Who Can Request Songs?</label>
+              <select id="cfgReqPerm" onchange="updatePreview()">
+                <option value="everyone" selected>Everyone</option>
+                <option value="vips">Subscribers & VIPs & Mods</option>
+                <option value="mods">Moderators & Broadcaster Only</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgClearPerm">Who Can Clear Queue?</label>
+              <select id="cfgClearPerm" onchange="updatePreview()">
+                <option value="mods" selected>Moderators & Broadcaster Only</option>
+                <option value="broadcaster">Broadcaster Only</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="cfgMaxDuration">Max Song Duration Limit (Minutes)</label>
+          <input type="number" id="cfgMaxDuration" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = No duration limit" />
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToPage('pageAuth')">&larr; Back to Step 1</button>
+          <button class="btn" onclick="goToPage('pageExport')">Next: Export URL &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: EXPORT LINK -->
+      <div id="pageExport" class="step-page">
+        <div class="page-header">
+          <h1 class="page-title">Export to OBS</h1>
+          <span class="step-badge">Step 3 of 3</span>
+        </div>
+        <p>Your custom Browser Source link is ready. Copy and paste this URL into OBS Studio.</p>
+
+        <label>OBS Browser Source URL</label>
+        <input type="text" id="obsUrlOutput" readonly />
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToPage('pageCustomize')">&larr; Back to Customize</button>
+          <button class="btn" onclick="copyObsUrl()">Copy Link</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OBS OVERLAY WIDGET VIEW -->
+  <div id="overlayView" class="widget">
+    <img id="albumArt" class="album-art" src="" alt="Album Art" />
+    <div class="info">
+      <div class="text-marquee-container">
+        <div id="title" class="title marquee-text">
+          <span id="trackNameText">Loading...</span>
+          <span class="eq-wave">
+            <span class="eq-bar"></span>
+            <span class="eq-bar"></span>
+            <span class="eq-bar"></span>
+          </span>
+        </div>
+      </div>
+      <div class="text-marquee-container">
+        <div id="artist" class="artist marquee-text"></div>
+      </div>
+      <div id="bar" class="bar"><div id="fill" class="fill"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
+    const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const isOverlayMode = urlParams.get('mode') === 'overlay' && urlParams.has('cid') && urlParams.has('refresh');
+
+      const redirectDisplay = document.getElementById('redirectUriDisplay');
+      if (redirectDisplay) {
+        redirectDisplay.value = REDIRECT_URI;
+      }
+
+      if (isOverlayMode) {
+        document.body.classList.add('overlay-mode');
+        const clientId = urlParams.get('cid');
+        const refreshToken = urlParams.get('refresh');
+        const twitchChannel = urlParams.get('channel');
+        
+        if (clientId && refreshToken) {
+          applyOverlaySettings(urlParams);
+          initOverlay(clientId, refreshToken, urlParams);
+          if (twitchChannel) {
+            initTwitchIntegration(twitchChannel, urlParams);
+          }
         }
+      } else if (code) {
+        handleCallback(code);
+      } else {
+        document.body.classList.remove('overlay-mode');
+
+        const savedClientId = localStorage.getItem('spotify_client_id');
+        const savedRefreshToken = localStorage.getItem('spotify_refresh_token');
+
+        if (savedClientId && document.getElementById('clientIdInput')) {
+          document.getElementById('clientIdInput').value = savedClientId;
+        }
+
+        if (savedClientId && savedRefreshToken) {
+          goToPage('pageCustomize');
+        } else {
+          goToPage('pageAuth');
+        }
+      }
+    });
+
+    function toggleAdvanced() {
+      const panel = document.getElementById('advancedPanel');
+      const arrow = document.getElementById('advArrow');
+      if (panel && arrow) {
+        if (panel.classList.contains('open')) {
+          panel.classList.remove('open');
+          arrow.textContent = '▼';
+        } else {
+          panel.classList.add('open');
+          arrow.textContent = '▲';
+        }
+      }
+    }
+
+    function goToPage(pageId) {
+      document.querySelectorAll('.step-page').forEach(page => page.classList.remove('active'));
+      const target = document.getElementById(pageId);
+      if (target) target.classList.add('active');
+      if (pageId === 'pageCustomize' || pageId === 'pageExport') updatePreview();
+    }
+
+    function generateRandomString(length) {
+      const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const values = crypto.getRandomValues(new Uint8Array(length));
+      return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+    }
+
+    async function sha256(plain) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      return window.crypto.subtle.digest('SHA-256', data);
+    }
+
+    function base64urlencode(a) {
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+        .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    async function startAuth() {
+      const clientIdInput = document.getElementById('clientIdInput');
+      if (!clientIdInput) return;
+      const clientId = clientIdInput.value.trim();
+      if (!clientId) return alert('Please enter your Spotify Client ID');
+
+      localStorage.setItem('spotify_client_id', clientId);
+
+      const codeVerifier = generateRandomString(64);
+      const hashed = await sha256(codeVerifier);
+      const codeChallenge = base64urlencode(hashed);
+
+      localStorage.setItem('code_verifier', codeVerifier);
+
+      const authUrl = new URL('https://accounts.spotify.com/authorize');
+      authUrl.search = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        scope: SCOPES,
+        code_challenge_method: 'S256',
+        code_challenge: codeChallenge,
+        redirect_uri: REDIRECT_URI
       });
 
-      if (response.ok) {
-        console.log(`Successfully executed Spotify action: ${action}`);
-      } else {
-        console.error(`Spotify API error on ${action}:`, response.statusText);
+      window.location.href = authUrl.toString();
+    }
+
+    async function handleCallback(authCode) {
+      const clientId = localStorage.getItem('spotify_client_id');
+      const codeVerifier = localStorage.getItem('code_verifier');
+
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: clientId,
+            grant_type: 'authorization_code',
+            code: authCode,
+            redirect_uri: REDIRECT_URI,
+            code_verifier: codeVerifier
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.refresh_token) {
+          localStorage.setItem('spotify_refresh_token', data.refresh_token);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          goToPage('pageCustomize');
+        } else {
+          alert('Failed to obtain refresh token from Spotify.');
+        }
+      } catch (e) {
+        alert('Authentication error: ' + e.message);
       }
-    } catch (error) {
-      console.error(`Failed to send ${action} command:`, error);
     }
-  }
 
-  // Clear queue function using fast-skip loop and UI reset
-  async function clearSpotifyQueue() {
-    const queueList = document.getElementById('queue-list');
-    if (queueList) queueList.innerHTML = '';
-
-    const maxSkips = 10;
-    for (let i = 0; i < maxSkips; i++) {
-      await controlSpotifyPlayback('next');
+    function checkAndApplyMarquee(element) {
+      if (!element) return;
+      const container = element.parentElement;
+      if (container && element.scrollWidth > container.clientWidth) {
+        element.classList.add('scroll');
+        if (!element.dataset.duplicated) {
+          element.innerHTML = `${element.innerHTML} &nbsp;&nbsp;&nbsp;&nbsp; ${element.innerHTML}`;
+          element.dataset.duplicated = 'true';
+        }
+      } else {
+        element.classList.remove('scroll');
+      }
     }
-    console.log('Spotify queue cleared.');
-  }
-</script>
+
+    function extractPlaylistId(input) {
+      if (!input) return '';
+      let str = input.trim();
+      if (str.includes('spotify:playlist:')) {
+        return str.split('spotify:playlist:')[1].split('?')[0];
+      }
+      if (str.includes('/playlist/')) {
+        return str.split('/playlist/')[1].split('?')[0];
+      }
+      return str;
+    }
+
+    function updatePreview() {
+      const previewWidget = document.getElementById('previewWidget');
+      if (!previewWidget) return;
+
+      const layout = document.getElementById('cfgLayout')?.value || 'horizontal';
+      const fontFamily = document.getElementById('cfgFontFamily')?.value || 'sans-serif';
+      const bg = document.getElementById('cfgBg')?.value || '#121212';
+      const text = document.getElementById('cfgText')?.value || '#ffffff';
+      const accent = document.getElementById('cfgAccent')?.value || '#1db954';
+      const borderColor = document.getElementById('cfgBorderColor')?.value || '#333333';
+      const borderWidth = document.getElementById('cfgBorderWidth')?.value || '0';
+      const borderStyle = document.getElementById('cfgBorderStyle')?.value || 'solid';
+      const radius = document.getElementById('cfgRadius')?.value || '0';
+      const artRadius = document.getElementById('cfgArtRadius')?.value || '0';
+      const width = document.getElementById('cfgWidth')?.value || '320';
+      const fontSize = document.getElementById('cfgFontSize')?.value || '13';
+      const padding = document.getElementById('cfgPadding')?.value || '10';
+      const textAlign = document.getElementById('cfgTextAlign')?.value || 'left';
+      const textTransform = document.getElementById('cfgTextTransform')?.value || 'none';
+      const letterSpacing = document.getElementById('cfgLetterSpacing')?.value || '0';
+      const shadow = document.getElementById('cfgShadow')?.value || 'soft';
+      const hideDelay = document.getElementById('cfgHideDelay')?.value || '0';
+      const channel = (document.getElementById('cfgTwitchChannel')?.value || '').trim().toLowerCase();
+      const showArt = document.getElementById('cfgShowArt')?.checked ?? true;
+      const showBar = document.getElementById('cfgShowBar')?.checked ?? true;
+      const fallbackPlaylist = extractPlaylistId(document.getElementById('cfgFallbackPlaylist')?.value || '');
+
+      // Advanced Params
+      const reqCmd = (document.getElementById('cfgReqCmd')?.value || '!request').trim();
+      const clearCmd = (document.getElementById('cfgClearCmd')?.value || '!clearqueue').trim();
+      const reqPerm = document.getElementById('cfgReqPerm')?.value || 'everyone';
+      const clearPerm = document.getElementById('cfgClearPerm')?.value || 'mods';
+      const maxDuration = document.getElementById('cfgMaxDuration')?.value || '0';
+
+      if (document.getElementById('cfgBgVal')) document.getElementById('cfgBgVal').textContent = bg;
+      if (document.getElementById('cfgTextVal')) document.getElementById('cfgTextVal').textContent = text;
+      if (document.getElementById('cfgAccentVal')) document.getElementById('cfgAccentVal').textContent = accent;
+      if (document.getElementById('cfgBorderColorVal')) document.getElementById('cfgBorderColorVal').textContent = borderColor;
+
+      previewWidget.style.background = bg;
+      previewWidget.style.color = text;
+      previewWidget.style.borderRadius = `${radius}px`;
+      previewWidget.style.width = `${width}px`;
+      previewWidget.style.padding = `${padding}px`;
+      previewWidget.style.fontFamily = fontFamily;
+      previewWidget.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+
+      if (layout === 'vertical') {
+        previewWidget.classList.add('layout-vertical');
+      } else {
+        previewWidget.classList.remove('layout-vertical');
+      }
+
+      if (shadow === 'soft') {
+        previewWidget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+      } else if (shadow === 'hard') {
+        previewWidget.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
+      } else if (shadow === 'glow') {
+        previewWidget.style.boxShadow = `0 0 14px ${accent}`;
+      } else {
+        previewWidget.style.boxShadow = 'none';
+      }
+      
+      const titleEl = document.getElementById('prevTitle');
+      const artistEl = document.getElementById('prevArtist');
+
+      document.querySelectorAll('.preview-box .text-marquee-container').forEach(el => {
+        el.style.textAlign = textAlign;
+      });
+
+      if (titleEl) {
+        titleEl.style.fontSize = `${fontSize}px`;
+        titleEl.style.textTransform = textTransform;
+        titleEl.style.letterSpacing = `${letterSpacing}px`;
+      }
+
+      if (artistEl) {
+        artistEl.style.color = text;
+        artistEl.style.opacity = '0.75';
+        artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+        artistEl.style.textTransform = textTransform;
+        artistEl.style.letterSpacing = `${letterSpacing}px`;
+      }
+      
+      const prevBar = document.getElementById('prevBar');
+      const prevFill = document.getElementById('prevFill');
+      const prevAlbumArt = document.getElementById('prevAlbumArt');
+
+      if (prevBar) {
+        prevBar.style.background = accent + '33';
+        prevBar.style.display = showBar ? 'block' : 'none';
+      }
+      if (prevFill) prevFill.style.background = accent;
+      
+      if (prevAlbumArt) {
+        prevAlbumArt.style.display = showArt ? 'block' : 'none';
+        prevAlbumArt.style.borderRadius = `${artRadius}px`;
+      }
+
+      checkAndApplyMarquee(titleEl);
+      checkAndApplyMarquee(artistEl);
+
+      const clientId = localStorage.getItem('spotify_client_id');
+      const refreshToken = localStorage.getItem('spotify_refresh_token');
+
+      if (clientId && refreshToken && document.getElementById('obsUrlOutput')) {
+        const params = new URLSearchParams({
+          mode: 'overlay',
+          cid: clientId,
+          refresh: refreshToken,
+          layout: layout,
+          font: fontFamily,
+          bg: bg.replace('#', ''),
+          text: text.replace('#', ''),
+          accent: accent.replace('#', ''),
+          bc: borderColor.replace('#', ''),
+          bw: borderWidth,
+          bs: borderStyle,
+          rad: radius,
+          artrad: artRadius,
+          w: width,
+          fs: fontSize,
+          pad: padding,
+          align: textAlign,
+          tt: textTransform,
+          ls: letterSpacing,
+          shadow: shadow,
+          delay: hideDelay,
+          channel: channel,
+          art: showArt ? '1' : '0',
+          bar: showBar ? '1' : '0',
+          fallback: fallbackPlaylist,
+          reqcmd: reqCmd,
+          clearcmd: clearCmd,
+          reqperm: reqPerm,
+          clearperm: clearPerm,
+          maxdur: maxDuration
+        });
+
+        document.getElementById('obsUrlOutput').value = `${REDIRECT_URI}?${params.toString()}`;
+      }
+    }
+
+    function copyObsUrl() {
+      const input = document.getElementById('obsUrlOutput');
+      if (!input) return;
+      input.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    }
+
+    function applyOverlaySettings(params) {
+      const w = document.getElementById('overlayView');
+      if (!w) return;
+
+      const layout = params.get('layout') || 'horizontal';
+      const font = params.get('font') || 'sans-serif';
+      const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
+      const text = params.get('text') ? `#${params.get('text')}` : '#ffffff';
+      const accent = params.get('accent') ? `#${params.get('accent')}` : '#1db954';
+      const borderColor = params.get('bc') ? `#${params.get('bc')}` : '#333333';
+      const borderWidth = params.get('bw') || '0';
+      const borderStyle = params.get('bs') || 'solid';
+      const radius = params.get('rad') || '10';
+      const artRadius = params.get('artrad') || '6';
+      const width = params.get('w') || '320';
+      const fontSize = params.get('fs') || '13';
+      const padding = params.get('pad') || '10';
+      const textAlign = params.get('align') || 'left';
+      const textTransform = params.get('tt') || 'none';
+      const letterSpacing = params.get('ls') || '0';
+      const shadow = params.get('shadow') || 'soft';
+      const showArt = params.get('art') !== '0';
+      const showBar = params.get('bar') !== '0';
+
+      w.style.background = bg;
+      w.style.color = text;
+      w.style.borderRadius = `${radius}px`;
+      w.style.width = `${width}px`;
+      w.style.padding = `${padding}px`;
+      w.style.fontFamily = font;
+      w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+
+      if (layout === 'vertical') {
+        w.classList.add('layout-vertical');
+      }
+
+      if (shadow === 'soft') {
+        w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+      } else if (shadow === 'hard') {
+        w.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
+      } else if (shadow === 'glow') {
+        w.style.boxShadow = `0 0 14px ${accent}`;
+      } else {
+        w.style.boxShadow = 'none';
+      }
+
+      const titleEl = document.getElementById('title');
+      const artistEl = document.getElementById('artist');
+
+      document.querySelectorAll('#overlayView .text-marquee-container').forEach(el => {
+        el.style.textAlign = textAlign;
+      });
+
+      if (titleEl) {
+        titleEl.style.fontSize = `${fontSize}px`;
+        titleEl.style.textTransform = textTransform;
+        titleEl.style.letterSpacing = `${letterSpacing}px`;
+      }
+
+      if (artistEl) {
+        artistEl.style.color = text;
+        artistEl.style.opacity = '0.75';
+        artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+        artistEl.style.textTransform = textTransform;
+        artistEl.style.letterSpacing = `${letterSpacing}px`;
+      }
+
+      const barEl = document.getElementById('bar');
+      const fillEl = document.getElementById('fill');
+      const albumArtEl = document.getElementById('albumArt');
+
+      if (barEl) {
+        barEl.style.background = accent + '33';
+        barEl.style.display = showBar ? 'block' : 'none';
+      }
+      if (fillEl) fillEl.style.background = accent;
+
+      if (albumArtEl) {
+        albumArtEl.style.display = showArt ? 'block' : 'none';
+        albumArtEl.style.borderRadius = `${artRadius}px`;
+      }
+    }
+
+    let activeSpotifyToken = null;
+    let lastTrackId = null;
+    let isTriggeringFallback = false;
+
+    function initOverlay(clientId, refreshToken, params) {
+      let pausedTimestamp = null;
+      const hideDelayMs = (parseInt(params.get('delay')) || 0) * 1000;
+      const fallbackPlaylistId = params.get('fallback');
+
+      async function refreshAccessToken() {
+        try {
+          const response = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: clientId,
+              grant_type: 'refresh_token',
+              refresh_token: refreshToken
+            })
+          });
+          const data = await response.json();
+          activeSpotifyToken = data.access_token;
+        } catch (e) {}
+      }
+
+      async function triggerFallbackPlaylist() {
+        if (!fallbackPlaylistId || !activeSpotifyToken || isTriggeringFallback) return;
+        isTriggeringFallback = true;
+        try {
+          await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${activeSpotifyToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              context_uri: `spotify:playlist:${fallbackPlaylistId}`
+            })
+          });
+        } catch (e) {
+          console.error('Failed to trigger fallback playlist:', e);
+        } finally {
+          setTimeout(() => { isTriggeringFallback = false; }, 5000);
+        }
+      }
+
+      function handlePlaybackStopped() {
+        if (fallbackPlaylistId) {
+          triggerFallbackPlaylist();
+        } else {
+          if (!pausedTimestamp) pausedTimestamp = Date.now();
+          const elapsed = Date.now() - pausedTimestamp;
+          const overlayWidget = document.getElementById('overlayView');
+          if (overlayWidget && elapsed >= hideDelayMs) {
+            overlayWidget.style.opacity = '0';
+            overlayWidget.style.transform = 'translateY(10px)';
+          }
+        }
+      }
+
+      async function fetchNowPlaying() {
+        if (!activeSpotifyToken) await refreshAccessToken();
+        if (!activeSpotifyToken) return;
+
+        try {
+          const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+          });
+
+          if (res.status === 401) {
+            await refreshAccessToken();
+            return;
+          }
+
+          if (res.status === 204 || res.status > 400) {
+            handlePlaybackStopped();
+            return;
+          }
+
+          const data = await res.json();
+          if (!data.is_playing || !data.item) {
+            handlePlaybackStopped();
+            return;
+          }
+
+          pausedTimestamp = null;
+
+          const currentTrackId = data.item.id;
+          const overlayWidget = document.getElementById('overlayView');
+
+          if (currentTrackId !== lastTrackId) {
+            lastTrackId = currentTrackId;
+
+            if (overlayWidget) {
+              overlayWidget.style.animation = 'none';
+              overlayWidget.offsetHeight;
+              overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
+            }
+
+            const trackNameText = document.getElementById('trackNameText');
+            const artistEl = document.getElementById('artist');
+            const albumArtEl = document.getElementById('albumArt');
+            
+            if (trackNameText) trackNameText.textContent = data.item.name;
+            if (artistEl) artistEl.textContent = data.item.artists.map(a => a.name).join(', ');
+            if (albumArtEl) albumArtEl.src = data.item.album.images[0]?.url || '';
+
+            const titleContainer = document.getElementById('title');
+            if (titleContainer) delete titleContainer.dataset.duplicated;
+            if (artistEl) delete artistEl.dataset.duplicated;
+
+            checkAndApplyMarquee(titleContainer);
+            checkAndApplyMarquee(artistEl);
+          }
+          
+          const percent = (data.progress_ms / data.item.duration_ms) * 100;
+          const fillEl = document.getElementById('fill');
+          if (fillEl) fillEl.style.width = `${percent}%`;
+          
+          if (overlayWidget) {
+            overlayWidget.style.opacity = '1';
+            overlayWidget.style.transform = 'translateY(0)';
+          }
+        } catch (e) {
+          handlePlaybackStopped();
+        }
+      }
+
+      setInterval(fetchNowPlaying, 3000);
+      fetchNowPlaying();
+    }
+
+    function initTwitchIntegration(channelName, params) {
+      const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+      const reqCmd = (params.get('reqcmd') || '!request').toLowerCase();
+      const clearCmd = (params.get('clearcmd') || '!clearqueue').toLowerCase();
+      const reqPerm = params.get('reqperm') || 'everyone';
+      const clearPerm = params.get('clearperm') || 'mods';
+      const maxDurMinutes = parseInt(params.get('maxdur')) || 0;
+
+      ws.onopen = () => {
+        ws.send('CAP REQ :twitch.tv/tags');
+        ws.send('PASS oauth:1234567890');
+        ws.send('NICK justinfan' + Math.floor(100000 + Math.random() * 900000));
+        ws.send(`JOIN #${channelName}`);
+      };
+
+      ws.onmessage = (event) => {
+        const msg = event.data;
+
+        if (msg.startsWith('PING')) {
+          ws.send('PONG :tmi.twitch.tv');
+          return;
+        }
+
+        if (msg.includes('PRIVMSG')) {
+          const textIndex = msg.indexOf(`PRIVMSG #${channelName} :`);
+          if (textIndex !== -1) {
+            const rawTags = msg.substring(0, textIndex).trim();
+            const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
+            const lowerMsg = chatText.toLowerCase();
+
+            const isBroadcaster = rawTags.includes('badges=broadcaster/') || rawTags.includes('badges=subscriber/0,broadcaster/');
+            const isMod = rawTags.includes('mod=1') || isBroadcaster;
+            const isVip = rawTags.includes('vip=1') || isMod;
+            const isSub = rawTags.includes('subscriber/') || isVip;
+
+            function hasPermission(level) {
+              if (level === 'everyone') return true;
+              if (level === 'vips') return isSub || isVip || isMod || isBroadcaster;
+              if (level === 'mods') return isMod || isBroadcaster;
+              if (level === 'broadcaster') return isBroadcaster;
+              return false;
+            }
+
+            if (lowerMsg === clearCmd) {
+              if (hasPermission(clearPerm)) {
+                clearSpotifyQueue();
+              }
+            } else if (lowerMsg.startsWith(reqCmd + ' ')) {
+              if (hasPermission(reqPerm)) {
+                const query = chatText.substring(reqCmd.length + 1).trim();
+                if (query.length > 0) {
+                  processSongRequest(query, maxDurMinutes);
+                }
+              }
+            }
+          }
+        }
+      };
+    }
+
+    async function processSongRequest(query, maxDurMinutes) {
+      if (!activeSpotifyToken) return;
+
+      try {
+        const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+
+        const searchData = await searchRes.json();
+        const track = searchData.tracks?.items?.[0];
+
+        if (!track) return;
+
+        if (maxDurMinutes > 0) {
+          const maxDurMs = maxDurMinutes * 60 * 1000;
+          if (track.duration_ms > maxDurMs) {
+            console.warn(`Track "${track.name}" exceeds max duration limit.`);
+            return;
+          }
+        }
+
+        await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(track.uri)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+      } catch (e) {
+        console.error('Song request processing failed:', e);
+      }
+    }
+
+    async function clearSpotifyQueue() {
+      if (!activeSpotifyToken) return;
+
+      try {
+        const queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+
+        if (!queueRes.ok) return;
+
+        const queueData = await queueRes.json();
+        const queuedTracks = queueData.queue || [];
+
+        for (let i = 0; i < queuedTracks.length; i++) {
+          await fetch('https://api.spotify.com/v1/me/player/next', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+          });
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      } catch (e) {
+        console.error('Failed to clear queue:', e);
+      }
+    }
+  </script>
+</body>
+</html>
