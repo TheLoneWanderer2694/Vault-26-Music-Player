@@ -34,7 +34,7 @@
       background: var(--card-bg);
       border-radius: 12px;
       padding: 32px;
-      max-width: 620px;
+      max-width: 680px;
       width: 100%;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
@@ -87,6 +87,23 @@
       padding-bottom: 4px;
       border-bottom: 1px dashed #333;
     }
+
+    .preset-btn {
+      background: #282828;
+      border: 1px solid #3e3e3e;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 12px;
+      transition: background 0.2s;
+    }
+    .preset-btn:hover { background: #3e3e3e; }
+    .preset-btn.p5-btn { background: #e60012; color: #fff; border-color: #ff3344; }
+    .preset-btn.p5-btn:hover { background: #ff1a2d; }
 
     .advanced-toggle {
       background: #222222;
@@ -154,10 +171,11 @@
       align-items: center;
       margin-bottom: 20px;
       border: 1px solid #282828;
-      min-height: 120px;
+      min-height: 140px;
+      overflow: hidden;
     }
 
-    /* Widget Styles */
+    /* Base Widget Structure */
     .widget {
       display: flex;
       align-items: center;
@@ -165,6 +183,7 @@
       padding: 10px;
       box-sizing: border-box;
       transition: opacity 0.5s ease;
+      position: relative;
     }
 
     .widget.layout-vertical {
@@ -186,8 +205,33 @@
     .info { flex: 1; min-width: 0; }
     .title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .artist { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar { width: 100%; height: 3px; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .bar { width: 100%; height: 4px; border-radius: 2px; margin-top: 8px; overflow: hidden; }
     .fill { height: 100%; width: 50%; transition: width 0.4s linear; }
+
+    /* Persona 5 Dynamic Theme Styling */
+    .widget.preset-persona5 {
+      transform: skewX(-5deg);
+      border: 2px solid #000000 !important;
+      box-shadow: 6px 6px 0px #000000, 10px 10px 0px #e60012 !important;
+    }
+    .widget.preset-persona5 .album-art {
+      transform: skewX(5deg);
+      border: 2px solid #ffffff;
+      box-shadow: 3px 3px 0px #000000;
+    }
+    .widget.preset-persona5 .title {
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0px #000000;
+    }
+    .widget.preset-persona5 .artist {
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .widget.preset-persona5 .bar {
+      border: 1px solid #000000;
+    }
 
     /* OBS Overlay Mode Override */
     body.overlay-mode {
@@ -251,6 +295,15 @@
           </div>
         </div>
 
+        <!-- Quick Theme Presets -->
+        <div class="section-divider">Quick Style Presets</div>
+        <div>
+          <button type="button" class="preset-btn" onclick="applyPreset('default')">Default Modern</button>
+          <button type="button" class="preset-btn p5-btn" onclick="applyPreset('persona5')">Persona 5 Stylish</button>
+          <button type="button" class="preset-btn" onclick="applyPreset('minimal')">Minimal Dark</button>
+          <button type="button" class="preset-btn" onclick="applyPreset('neon')">Cyber Neon</button>
+        </div>
+
         <!-- Layout & Typography Settings -->
         <div class="section-divider">Layout & Typography</div>
         
@@ -268,7 +321,8 @@
               <option value="sans-serif" selected>Sans-Serif (Modern)</option>
               <option value="serif">Serif (Classic)</option>
               <option value="monospace">Monospace (Retro)</option>
-              <option value="'Impact', sans-serif">Impact (Bold)</option>
+              <option value="'Impact', sans-serif">Impact (Bold High-Contrast)</option>
+              <option value="'Trebuchet MS', sans-serif">Trebuchet MS (Stylized)</option>
             </select>
           </div>
         </div>
@@ -285,6 +339,29 @@
           <div>
             <label for="cfgPadding">Padding (px)</label>
             <input type="text" id="cfgPadding" value="10" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label for="cfgTextAlign">Text Align</label>
+            <select id="cfgTextAlign" onchange="updatePreview()">
+              <option value="left" selected>Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgTextTransform">Text Transform</label>
+            <select id="cfgTextTransform" onchange="updatePreview()">
+              <option value="none" selected>Normal</option>
+              <option value="uppercase">UPPERCASE</option>
+              <option value="capitalize">Capitalize</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgLetterSpacing">Letter Spacing (px)</label>
+            <input type="text" id="cfgLetterSpacing" value="0" oninput="updatePreview()" />
           </div>
         </div>
 
@@ -315,6 +392,32 @@
           </div>
         </div>
 
+        <!-- Borders & Shadows -->
+        <div class="section-divider">Borders & Shadows</div>
+
+        <div class="grid-3">
+          <div>
+            <label>Border Color</label>
+            <div class="color-picker">
+              <input type="color" id="cfgBorderColor" value="#333333" oninput="updatePreview()" />
+              <span id="cfgBorderColorVal">#333333</span>
+            </div>
+          </div>
+          <div>
+            <label for="cfgBorderWidth">Border Width (px)</label>
+            <input type="text" id="cfgBorderWidth" value="0" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgBorderStyle">Border Style</label>
+            <select id="cfgBorderStyle" onchange="updatePreview()">
+              <option value="solid" selected>Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+              <option value="double">Double</option>
+            </select>
+          </div>
+        </div>
+
         <div class="grid-2">
           <div>
             <label for="cfgRadius">Widget Corner Radius (px)</label>
@@ -332,7 +435,7 @@
             <select id="cfgShadow" onchange="updatePreview()">
               <option value="none">None</option>
               <option value="soft" selected>Soft Shadow</option>
-              <option value="hard">Hard Contrast Shadow</option>
+              <option value="hard">Hard Contrast Offset</option>
               <option value="glow">Accent Glow</option>
             </select>
           </div>
@@ -443,6 +546,8 @@
     const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const REDIRECT_URI = window.location.origin + window.location.pathname;
 
+    let currentPreset = 'default';
+
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
@@ -503,6 +608,61 @@
       const target = document.getElementById(pageId);
       if (target) target.classList.add('active');
       if (pageId === 'pageCustomize' || pageId === 'pageExport') updatePreview();
+    }
+
+    function applyPreset(presetName) {
+      currentPreset = presetName;
+      if (presetName === 'persona5') {
+        document.getElementById('cfgBg').value = '#e60012';
+        document.getElementById('cfgText').value = '#ffffff';
+        document.getElementById('cfgAccent').value = '#ffffff';
+        document.getElementById('cfgBorderColor').value = '#000000';
+        document.getElementById('cfgBorderWidth').value = '2';
+        document.getElementById('cfgFontFamily').value = "'Impact', sans-serif";
+        document.getElementById('cfgTextTransform').value = 'uppercase';
+        document.getElementById('cfgLetterSpacing').value = '1';
+        document.getElementById('cfgRadius').value = '0';
+        document.getElementById('cfgArtRadius').value = '0';
+        document.getElementById('cfgShadow').value = 'hard';
+      } else if (presetName === 'minimal') {
+        document.getElementById('cfgBg').value = '#000000';
+        document.getElementById('cfgText').value = '#d1d1d1';
+        document.getElementById('cfgAccent').value = '#ffffff';
+        document.getElementById('cfgBorderColor').value = '#222222';
+        document.getElementById('cfgBorderWidth').value = '1';
+        document.getElementById('cfgFontFamily').value = 'sans-serif';
+        document.getElementById('cfgTextTransform').value = 'none';
+        document.getElementById('cfgLetterSpacing').value = '0';
+        document.getElementById('cfgRadius').value = '4';
+        document.getElementById('cfgArtRadius').value = '4';
+        document.getElementById('cfgShadow').value = 'none';
+      } else if (presetName === 'neon') {
+        document.getElementById('cfgBg').value = '#0d0221';
+        document.getElementById('cfgText').value = '#00f5d4';
+        document.getElementById('cfgAccent').value = '#7b2cbf';
+        document.getElementById('cfgBorderColor').value = '#00f5d4';
+        document.getElementById('cfgBorderWidth').value = '1';
+        document.getElementById('cfgFontFamily').value = 'monospace';
+        document.getElementById('cfgTextTransform').value = 'uppercase';
+        document.getElementById('cfgLetterSpacing').value = '2';
+        document.getElementById('cfgRadius').value = '8';
+        document.getElementById('cfgArtRadius').value = '4';
+        document.getElementById('cfgShadow').value = 'glow';
+      } else {
+        // Default
+        document.getElementById('cfgBg').value = '#121212';
+        document.getElementById('cfgText').value = '#ffffff';
+        document.getElementById('cfgAccent').value = '#1db954';
+        document.getElementById('cfgBorderColor').value = '#333333';
+        document.getElementById('cfgBorderWidth').value = '0';
+        document.getElementById('cfgFontFamily').value = 'sans-serif';
+        document.getElementById('cfgTextTransform').value = 'none';
+        document.getElementById('cfgLetterSpacing').value = '0';
+        document.getElementById('cfgRadius').value = '10';
+        document.getElementById('cfgArtRadius').value = '6';
+        document.getElementById('cfgShadow').value = 'soft';
+      }
+      updatePreview();
     }
 
     function generateRandomString(length) {
@@ -584,11 +744,17 @@
       const bg = document.getElementById('cfgBg').value;
       const text = document.getElementById('cfgText').value;
       const accent = document.getElementById('cfgAccent').value;
+      const borderColor = document.getElementById('cfgBorderColor').value;
+      const borderWidth = document.getElementById('cfgBorderWidth').value || '0';
+      const borderStyle = document.getElementById('cfgBorderStyle').value;
       const radius = document.getElementById('cfgRadius').value || '0';
       const artRadius = document.getElementById('cfgArtRadius').value || '0';
       const width = document.getElementById('cfgWidth').value || '320';
       const fontSize = document.getElementById('cfgFontSize').value || '13';
       const padding = document.getElementById('cfgPadding').value || '10';
+      const textAlign = document.getElementById('cfgTextAlign').value;
+      const textTransform = document.getElementById('cfgTextTransform').value;
+      const letterSpacing = document.getElementById('cfgLetterSpacing').value || '0';
       const shadow = document.getElementById('cfgShadow').value;
       const hideDelay = document.getElementById('cfgHideDelay').value || '0';
       const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
@@ -605,14 +771,24 @@
       document.getElementById('cfgBgVal').textContent = bg;
       document.getElementById('cfgTextVal').textContent = text;
       document.getElementById('cfgAccentVal').textContent = accent;
+      document.getElementById('cfgBorderColorVal').textContent = borderColor;
 
       const w = document.getElementById('previewWidget');
+      
+      // Preset toggle
+      if (currentPreset === 'persona5') {
+        w.classList.add('preset-persona5');
+      } else {
+        w.classList.remove('preset-persona5');
+      }
+
       w.style.background = bg;
       w.style.color = text;
       w.style.borderRadius = `${radius}px`;
       w.style.width = `${width}px`;
       w.style.padding = `${padding}px`;
       w.style.fontFamily = fontFamily;
+      w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
 
       // Layout Adjustment
       if (layout === 'vertical') {
@@ -628,14 +804,24 @@
         w.style.boxShadow = '4px 4px 0px rgba(0,0,0,0.8)';
       } else if (shadow === 'glow') {
         w.style.boxShadow = `0 0 12px ${accent}`;
-      } else {
+      } else if (currentPreset !== 'persona5') {
         w.style.boxShadow = 'none';
       }
       
-      document.getElementById('prevTitle').style.fontSize = `${fontSize}px`;
-      document.getElementById('prevArtist').style.color = text;
-      document.getElementById('prevArtist').style.opacity = '0.7';
-      document.getElementById('prevArtist').style.fontSize = `${parseInt(fontSize) - 2}px`;
+      const titleEl = document.getElementById('prevTitle');
+      const artistEl = document.getElementById('prevArtist');
+
+      titleEl.style.fontSize = `${fontSize}px`;
+      titleEl.style.textAlign = textAlign;
+      titleEl.style.textTransform = textTransform;
+      titleEl.style.letterSpacing = `${letterSpacing}px`;
+
+      artistEl.style.color = text;
+      artistEl.style.opacity = '0.75';
+      artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+      artistEl.style.textAlign = textAlign;
+      artistEl.style.textTransform = textTransform;
+      artistEl.style.letterSpacing = `${letterSpacing}px`;
       
       document.getElementById('prevBar').style.background = accent + '33';
       document.getElementById('prevFill').style.background = accent;
@@ -652,16 +838,23 @@
           mode: 'overlay',
           cid: clientId,
           refresh: refreshToken,
+          preset: currentPreset,
           layout: layout,
           font: fontFamily,
           bg: bg.replace('#', ''),
           text: text.replace('#', ''),
           accent: accent.replace('#', ''),
+          bc: borderColor.replace('#', ''),
+          bw: borderWidth,
+          bs: borderStyle,
           rad: radius,
           artrad: artRadius,
           w: width,
           fs: fontSize,
           pad: padding,
+          align: textAlign,
+          tt: textTransform,
+          ls: letterSpacing,
           shadow: shadow,
           delay: hideDelay,
           channel: channel,
@@ -687,19 +880,30 @@
 
     function applyOverlaySettings(params) {
       const w = document.getElementById('overlayView');
+      const preset = params.get('preset') || 'default';
       const layout = params.get('layout') || 'horizontal';
       const font = params.get('font') || 'sans-serif';
       const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
       const text = params.get('text') ? `#${params.get('text')}` : '#ffffff';
       const accent = params.get('accent') ? `#${params.get('accent')}` : '#1db954';
+      const borderColor = params.get('bc') ? `#${params.get('bc')}` : '#333333';
+      const borderWidth = params.get('bw') || '0';
+      const borderStyle = params.get('bs') || 'solid';
       const radius = params.get('rad') || '10';
       const artRadius = params.get('artrad') || '6';
       const width = params.get('w') || '320';
       const fontSize = params.get('fs') || '13';
       const padding = params.get('pad') || '10';
+      const textAlign = params.get('align') || 'left';
+      const textTransform = params.get('tt') || 'none';
+      const letterSpacing = params.get('ls') || '0';
       const shadow = params.get('shadow') || 'soft';
       const showArt = params.get('art') !== '0';
       const showBar = params.get('bar') !== '0';
+
+      if (preset === 'persona5') {
+        w.classList.add('preset-persona5');
+      }
 
       w.style.background = bg;
       w.style.color = text;
@@ -707,6 +911,7 @@
       w.style.width = `${width}px`;
       w.style.padding = `${padding}px`;
       w.style.fontFamily = font;
+      w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
 
       if (layout === 'vertical') {
         w.classList.add('layout-vertical');
@@ -718,14 +923,24 @@
         w.style.boxShadow = '4px 4px 0px rgba(0,0,0,0.8)';
       } else if (shadow === 'glow') {
         w.style.boxShadow = `0 0 12px ${accent}`;
-      } else {
+      } else if (preset !== 'persona5') {
         w.style.boxShadow = 'none';
       }
 
-      document.getElementById('title').style.fontSize = `${fontSize}px`;
-      document.getElementById('artist').style.color = text;
-      document.getElementById('artist').style.opacity = '0.7';
-      document.getElementById('artist').style.fontSize = `${parseInt(fontSize) - 2}px`;
+      const titleEl = document.getElementById('title');
+      const artistEl = document.getElementById('artist');
+
+      titleEl.style.fontSize = `${fontSize}px`;
+      titleEl.style.textAlign = textAlign;
+      titleEl.style.textTransform = textTransform;
+      titleEl.style.letterSpacing = `${letterSpacing}px`;
+
+      artistEl.style.color = text;
+      artistEl.style.opacity = '0.75';
+      artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+      artistEl.style.textAlign = textAlign;
+      artistEl.style.textTransform = textTransform;
+      artistEl.style.letterSpacing = `${letterSpacing}px`;
 
       document.getElementById('bar').style.background = accent + '33';
       document.getElementById('fill').style.background = accent;
