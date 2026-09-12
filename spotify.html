@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spotify OBS Overlay Generator</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card-bg: #181818;
+      --accent: #1DB954;
+      --text: #ffffff;
+      --subtext: #b3b3b3;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* Generator Dashboard UI */
+    .dashboard {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    h1 { font-size: 22px; margin-top: 0; margin-bottom: 8px; }
+    p { color: var(--subtext); font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
+    
+    label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; color: var(--subtext); }
+    input {
+      width: 100%;
+      padding: 12px;
+      background: #282828;
+      border: 1px solid #3e3e3e;
+      border-radius: 6px;
+      color: #fff;
+      box-sizing: border-box;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background: #1ed760; }
+    .hidden { display: none !important; }
+
+    /* OBS Overlay Widget UI */
+    body.overlay-mode { background: transparent; overflow: hidden; }
+
+    .widget {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(18, 18, 18, 0.88);
+      backdrop-filter: blur(8px);
+      padding: 10px;
+      border-radius: 10px;
+      width: 320px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .album-art { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; background: #282828; }
+    .info { flex: 1; min-width: 0; }
+    .title { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .artist { font-size: 11px; color: var(--subtext); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar { width: 100%; height: 3px; background: rgba(255, 255, 255, 0.15); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s linear; }
+  </style>
+</head>
+<body>
+
+  <!-- DASHBOARD SETUP VIEW -->
+  <div id="dashboardView" class="dashboard">
+    <div class="card">
+      <h1>Spotify OBS Overlay Setup</h1>
+      <p>Connect your Spotify app credentials to generate an OBS Browser Source link.</p>
+
+      <div id="setupStep">
+        <label for="clientIdInput">Spotify Client ID</label>
+        <input type="text" id="clientIdInput" placeholder="Paste Client ID from Spotify Dashboard" />
+        <button class="btn" onclick="startAuth()">Log In with Spotify</button>
+      </div>
+
+      <div id="resultStep" class="hidden">
+        <label>Your OBS Browser Source URL</label>
+        <input type="text" id="obsUrlOutput" readonly />
+        <button class="btn" onclick="copyObsUrl()">Copy URL for OBS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBS WIDGET VIEW -->
+  <div id="overlayView" class="widget hidden">
+    <img id="albumArt" class="album-art" src="" alt="Album Art" />
+    <div class="info">
+      <div id="title" class="title">Loading...</div>
+      <div id="artist" class="artist"></div>
+      <div class="bar"><div id="fill" class="fill"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const SCOPES = 'user-read-currently-playing user-read-playback-state';
+
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const code = urlParams.get('code');
+    const refreshToken = urlParams.get('refresh');
+
+    // ROUTE 1: OBS Overlay Mode
+    if (mode === 'overlay') {
+      document.body.classList.add('overlay-mode');
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('overlayView').classList.remove('hidden');
+
+      const clientId = urlParams.get('cid');
+      if (clientId && refreshToken) {
+        initOverlay(clientId, refreshToken);
+      }
+    }
+
+    // ROUTE 2: Auth Callback Handler
+    else if (code) {
+      handleCallback(code);
+    }
+
+    // ROUTE 3: Initial Setup View Check
+    else {
+      const savedClientId = localStorage.getItem('spotify_client_id');
+      if (savedClientId) {
+        document.getElementById('clientIdInput').value = savedClientId;
+      }
+    }
+
+    // PKCE Helper Functions for Client-Side OAuth Security
+    function generateRandomString(length) {
+      const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const values = crypto.getRandomValues(new Uint8Array(length));
+      return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+    }
+
+    async function sha256(plain) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      return window.crypto.subtle.digest('SHA-256', data);
+    }
+
+    function base64urlencode(a) {
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+        .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    // 1. Initiate Spotify PKCE Login Flow
+    async function startAuth() {
+      const clientId = document.getElementById('clientIdInput').value.trim();
+      if (!clientId) return alert('Please enter your Spotify Client ID');
+
+      localStorage.setItem('spotify_client_id', clientId);
+
+      const codeVerifier = generateRandomString(64);
+      const hashed = await sha256(codeVerifier);
+      const codeChallenge = base64urlencode(hashed);
+
+      localStorage.setItem('code_verifier', codeVerifier);
+
+      const redirectUri = window.location.origin + window.location.pathname;
+      const authUrl = new URL('https://accounts.spotify.com/authorize');
+
+      authUrl.search = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        scope: SCOPES,
+        code_challenge_method: 'S256',
+        code_challenge: codeChallenge,
+        redirect_uri: redirectUri
+      });
+
+      window.location.href = authUrl.toString();
+    }
+
+    // 2. Exchange Authorization Code for Refresh Token
+    async function handleCallback(authCode) {
+      const clientId = localStorage.getItem('spotify_client_id');
+      const codeVerifier = localStorage.getItem('code_verifier');
+      const redirectUri = window.location.origin + window.location.pathname;
+
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: clientId,
+            grant_type: 'authorization_code',
+            code: authCode,
+            redirect_uri: redirectUri,
+            code_verifier: codeVerifier
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.refresh_token) {
+          document.getElementById('setupStep').classList.add('hidden');
+          document.getElementById('resultStep').classList.remove('hidden');
+
+          const obsUrl = `${redirectUri}?mode=overlay&cid=${encodeURIComponent(clientId)}&refresh=${encodeURIComponent(data.refresh_token)}`;
+          document.getElementById('obsUrlOutput').value = obsUrl;
+        } else {
+          alert('Failed to obtain token from Spotify.');
+        }
+      } catch (e) {
+        alert('Authentication error: ' + e.message);
+      }
+    }
+
+    function copyObsUrl() {
+      const input = document.getElementById('obsUrlOutput');
+      input.select();
+      document.execCommand('copy');
+      alert('Overlay URL copied to clipboard! Paste this into an OBS Browser Source.');
+    }
+
+    // 3. OBS Widget Update Loop
+    function initOverlay(clientId, refreshToken) {
+      let accessToken = null;
+
+      async function refreshAccessToken() {
+        try {
+          const response = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: clientId,
+              grant_type: 'refresh_token',
+              refresh_token: refreshToken
+            })
+          });
+          const data = await response.json();
+          accessToken = data.access_token;
+        } catch (e) {}
+      }
+
+      async function fetchNowPlaying() {
+        if (!accessToken) await refreshAccessToken();
+        if (!accessToken) return;
+
+        try {
+          const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+
+          if (res.status === 401) {
+            await refreshAccessToken();
+            return;
+          }
+
+          if (res.status === 204 || res.status > 400) {
+            document.getElementById('overlayView').style.opacity = '0';
+            return;
+          }
+
+          const data = await res.json();
+          if (!data.is_playing || !data.item) {
+            document.getElementById('overlayView').style.opacity = '0';
+            return;
+          }
+
+          document.getElementById('title').textContent = data.item.name;
+          document.getElementById('artist').textContent = data.item.artists.map(a => a.name).join(', ');
+          document.getElementById('albumArt').src = data.item.album.images[0]?.url || '';
+          
+          const percent = (data.progress_ms / data.durationMs || data.item.duration_ms) * 100;
+          document.getElementById('fill').style.width = `${percent}%`;
+          
+          document.getElementById('overlayView').style.opacity = '1';
+        } catch (e) {
+          document.getElementById('overlayView').style.opacity = '0';
+        }
+      }
+
+      setInterval(fetchNowPlaying, 3000);
+      fetchNowPlaying();
+    }
+  </script>
+</body>
+</html>
