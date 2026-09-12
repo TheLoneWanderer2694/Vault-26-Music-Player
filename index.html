@@ -38,6 +38,1444 @@
       width: 100%;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
+      animation: cardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #282828;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .page-title { font-size: 20px; font-weight: bold; margin: 0; }
+    .step-badge { font-size: 12px; background: #282828; color: var(--subtext); padding: 4px 10px; border-radius: 12px; }
+
+    p { color: var(--subtext); font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+    
+    label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; color: var(--subtext); letter-spacing: 0.5px; }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #282828;
+      border: 1px solid #3e3e3e;
+      border-radius: 6px;
+      color: #fff;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.25);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .color-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: #282828; padding: 4px 10px; border-radius: 6px; border: 1px solid #3e3e3e; }
+    .color-picker input[type="color"] { border: none; background: transparent; width: 28px; height: 28px; cursor: pointer; padding: 0; }
+    .color-picker span { font-size: 12px; color: #fff; }
+
+    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; }
+    .checkbox-group input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+    .checkbox-group span { font-size: 13px; color: var(--text); }
+
+    .section-divider {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin: 20px 0 12px 0;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #333;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .preset-btn {
+      background: #282828;
+      border: 1px solid #3e3e3e;
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .preset-btn:hover {
+      transform: translateY(-2px);
+      background: #3e3e3e;
+      border-color: #555;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .preset-btn:active { transform: translateY(0); }
+    
+    /* Preset Themes Specific Styles */
+    .preset-btn.p5-btn { background: #e60012; color: #fff; border-color: #ff3344; }
+    .preset-btn.p5-btn:hover { background: #ff1a2d; box-shadow: 0 4px 12px rgba(230, 0, 18, 0.4); }
+    
+    .preset-btn.synth-btn { background: #1a0933; color: #00f5d4; border-color: #f72585; }
+    .preset-btn.synth-btn:hover { background: #2a124d; box-shadow: 0 0 10px #f72585; }
+
+    .preset-btn.glass-btn { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+    .preset-btn.glass-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+    .preset-btn.gb-btn { background: #8bac0f; color: #0f380f; border-color: #306230; }
+    .preset-btn.gb-btn:hover { background: #9bbc0f; }
+
+    .preset-btn.cp-btn { background: #fcee0a; color: #000; border-color: #fcee0a; }
+    .preset-btn.cp-btn:hover { background: #fff033; box-shadow: 0 0 10px #fcee0a; }
+
+    .advanced-toggle {
+      background: #222222;
+      border: 1px solid #333;
+      color: var(--accent);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      margin-bottom: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background 0.2s ease;
+    }
+
+    .advanced-toggle:hover { background: #282828; }
+
+    .advanced-panel {
+      display: none;
+      background: #141414;
+      border: 1px solid #282828;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 20px;
+      animation: panelSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes panelSlideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .advanced-panel.open { display: block; }
+
+    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #1ed760;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(29, 185, 84, 0.3);
+    }
+
+    .btn:active { transform: translateY(0); }
+    .btn-secondary { background: #282828; color: var(--text); }
+    .btn-secondary:hover { background: #3e3e3e; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+
+    .step-page { display: none; }
+    .step-page.active {
+      display: block;
+      animation: pageSwitch 0.35s ease forwards;
+    }
+
+    @keyframes pageSwitch {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Live Preview Box */
+    .preview-box {
+      background: #000;
+      background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      padding: 30px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      border: 1px solid #282828;
+      min-height: 140px;
+      overflow: hidden;
+    }
+
+    /* Base Widget Structure */
+    .widget {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+      transition: opacity 0.5s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .widget.layout-vertical {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .widget.layout-vertical .album-art {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
+
+    .widget.layout-vertical .info {
+      width: 100%;
+    }
+
+    .album-art {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      background: #282828;
+      flex-shrink: 0;
+      transition: transform 0.3s ease, border-radius 0.3s ease;
+    }
+
+    .widget:hover .album-art {
+      transform: scale(1.04);
+    }
+
+    .info { flex: 1; min-width: 0; position: relative; }
+
+    /* Animated Marquee Container for Text Overflow */
+    .text-marquee-container {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .marquee-text {
+      display: inline-block;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    .marquee-text.scroll {
+      animation: marqueeScroll 8s linear infinite;
+    }
+
+    @keyframes marqueeScroll {
+      0% { transform: translateX(0%); }
+      15% { transform: translateX(0%); }
+      85% { transform: translateX(-50%); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .title { font-weight: bold; }
+    .artist { margin-top: 2px; }
+
+    /* Audio Equalizer Animated Wave */
+    .eq-wave {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .eq-bar {
+      width: 2px;
+      background-color: currentColor;
+      border-radius: 1px;
+      animation: eqBounce 1.2s ease-in-out infinite alternate;
+    }
+
+    .eq-bar:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+    .eq-bar:nth-child(2) { height: 100%; animation-delay: 0.3s; }
+    .eq-bar:nth-child(3) { height: 60%; animation-delay: 0.2s; }
+
+    @keyframes eqBounce {
+      0% { height: 20%; }
+      100% { height: 100%; }
+    }
+
+    .bar {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .fill {
+      height: 100%;
+      width: 50%;
+      transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      position: relative;
+    }
+
+    .fill::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 8px;
+      background: #ffffff;
+      opacity: 0.6;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #ffffff;
+    }
+
+    /* PRESET ANIMATIONS & VISUAL EFFECTS */
+
+    /* Persona 5 Glitch & Offset Entrance */
+    .widget.preset-persona5 {
+      transform: skewX(-5deg);
+      border: 2px solid #000000 !important;
+      box-shadow: 6px 6px 0px #000000, 10px 10px 0px #e60012 !important;
+      animation: p5Glitch 0.4s ease-out;
+    }
+
+    @keyframes p5Glitch {
+      0% { transform: skewX(-15deg) scale(0.95); opacity: 0.5; }
+      50% { transform: skewX(5deg) scale(1.02); }
+      100% { transform: skewX(-5deg) scale(1); opacity: 1; }
+    }
+
+    .widget.preset-persona5 .album-art {
+      transform: skewX(5deg);
+      border: 2px solid #ffffff;
+      box-shadow: 3px 3px 0px #000000;
+    }
+
+    .widget.preset-persona5 .title {
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0px #000000;
+    }
+
+    /* Synthwave Pulsing Neon Glow */
+    .widget.preset-synthwave {
+      animation: synthPulse 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes synthPulse {
+      0% { box-shadow: 0 0 8px #f72585, inset 0 0 6px #7b2cbf; }
+      100% { box-shadow: 0 0 18px #f72585, inset 0 0 12px #7b2cbf; }
+    }
+
+    /* Cyberpunk Scanline Effect */
+    .widget.preset-cyberpunk {
+      position: relative;
+    }
+
+    .widget.preset-cyberpunk::before {
+      content: '';
+      position: absolute;
+      top: -100%; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+      animation: cyberpunkScan 4s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes cyberpunkScan {
+      0% { top: -100%; }
+      100% { top: 200%; }
+    }
+
+    /* Game Boy LCD Scanlines */
+    .widget.preset-gameboy::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg, rgba(15, 56, 15, 0.15), rgba(15, 56, 15, 0.15) 1px, transparent 1px, transparent 2px);
+      pointer-events: none;
+    }
+
+    /* Glassmorphism Dynamic Class */
+    .widget.preset-glass {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* OBS Overlay Mode Override */
+    body.overlay-mode {
+      background: transparent !important;
+      overflow: hidden;
+    }
+
+    body.overlay-mode #dashboardView { display: none !important; }
+
+    body.overlay-mode #overlayView {
+      display: flex !important;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 9999;
+    }
+
+    body:not(.overlay-mode) #overlayView { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- DASHBOARD SETUP VIEW -->
+  <div id="dashboardView" class="dashboard">
+    <div class="card">
+      
+      <!-- STEP 1: AUTHENTICATION -->
+      <div id="pageAuth" class="step-page active">
+        <div class="page-header">
+          <h1 class="page-title">Spotify OBS Overlay</h1>
+          <span class="step-badge">Step 1 of 3</span>
+        </div>
+        <p>Log in with your Spotify Client ID to generate your custom stream overlay widget.</p>
+
+        <label for="clientIdInput">Spotify Client ID</label>
+        <input type="text" id="clientIdInput" placeholder="Paste Client ID from Spotify Developer Dashboard" />
+
+        <label>Redirect URI to add in Spotify Dashboard</label>
+        <input type="text" id="redirectUriDisplay" readonly />
+
+        <button class="btn" onclick="startAuth()">Connect Spotify Account</button>
+      </div>
+
+      <!-- STEP 2: CUSTOMIZE WIDGET -->
+      <div id="pageCustomize" class="step-page">
+        <div class="page-header">
+          <h1 class="page-title">Customize Widget</h1>
+          <span class="step-badge">Step 2 of 3</span>
+        </div>
+
+        <!-- Live Preview -->
+        <label>Live Preview</label>
+        <div class="preview-box">
+          <div id="previewWidget" class="widget">
+            <img id="prevAlbumArt" class="album-art" src="https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b5485a036e" alt="Preview Art" />
+            <div class="info">
+              <div class="text-marquee-container">
+                <div id="prevTitle" class="title marquee-text">
+                  Song Title
+                  <span class="eq-wave">
+                    <span class="eq-bar"></span>
+                    <span class="eq-bar"></span>
+                    <span class="eq-bar"></span>
+                  </span>
+                </div>
+              </div>
+              <div class="text-marquee-container">
+                <div id="prevArtist" class="artist marquee-text">Artist Name</div>
+              </div>
+              <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Theme Presets -->
+        <div class="section-divider">Quick Style Presets</div>
+        <div class="preset-grid">
+          <button type="button" class="preset-btn" onclick="applyPreset('default')">Default Modern</button>
+          <button type="button" class="preset-btn p5-btn" onclick="applyPreset('persona5')">Persona 5</button>
+          <button type="button" class="preset-btn synth-btn" onclick="applyPreset('synthwave')">Synthwave</button>
+          <button type="button" class="preset-btn glass-btn" onclick="applyPreset('glass')">Glassmorphism</button>
+          <button type="button" class="preset-btn gb-btn" onclick="applyPreset('gameboy')">Game Boy</button>
+          <button type="button" class="preset-btn cp-btn" onclick="applyPreset('cyberpunk')">Cyberpunk</button>
+          <button type="button" class="preset-btn" onclick="applyPreset('minimal')">Minimal Dark</button>
+        </div>
+
+        <!-- Layout & Typography Settings -->
+        <div class="section-divider">Layout & Typography</div>
+        
+        <div class="grid-2">
+          <div>
+            <label for="cfgLayout">Widget Layout</label>
+            <select id="cfgLayout" onchange="updatePreview()">
+              <option value="horizontal" selected>Horizontal (Compact)</option>
+              <option value="vertical">Vertical (Card)</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgFontFamily">Font Family</label>
+            <select id="cfgFontFamily" onchange="updatePreview()">
+              <option value="sans-serif" selected>Sans-Serif (Modern)</option>
+              <option value="serif">Serif (Classic)</option>
+              <option value="monospace">Monospace (Retro)</option>
+              <option value="'Impact', sans-serif">Impact (Bold High-Contrast)</option>
+              <option value="'Trebuchet MS', sans-serif">Trebuchet MS (Stylized)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label for="cfgWidth">Width (px)</label>
+            <input type="text" id="cfgWidth" value="320" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgFontSize">Font Size (px)</label>
+            <input type="text" id="cfgFontSize" value="13" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgPadding">Padding (px)</label>
+            <input type="text" id="cfgPadding" value="10" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label for="cfgTextAlign">Text Align</label>
+            <select id="cfgTextAlign" onchange="updatePreview()">
+              <option value="left" selected>Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgTextTransform">Text Transform</label>
+            <select id="cfgTextTransform" onchange="updatePreview()">
+              <option value="none" selected>Normal</option>
+              <option value="uppercase">UPPERCASE</option>
+              <option value="capitalize">Capitalize</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgLetterSpacing">Letter Spacing (px)</label>
+            <input type="text" id="cfgLetterSpacing" value="0" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <!-- Colors & Effects -->
+        <div class="section-divider">Colors & Visual Effects</div>
+
+        <div class="grid-3">
+          <div>
+            <label>Background</label>
+            <div class="color-picker">
+              <input type="color" id="cfgBg" value="#121212" oninput="updatePreview()" />
+              <span id="cfgBgVal">#121212</span>
+            </div>
+          </div>
+          <div>
+            <label>Text</label>
+            <div class="color-picker">
+              <input type="color" id="cfgText" value="#ffffff" oninput="updatePreview()" />
+              <span id="cfgTextVal">#ffffff</span>
+            </div>
+          </div>
+          <div>
+            <label>Accent Bar</label>
+            <div class="color-picker">
+              <input type="color" id="cfgAccent" value="#1db954" oninput="updatePreview()" />
+              <span id="cfgAccentVal">#1db954</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Borders & Shadows -->
+        <div class="section-divider">Borders & Shadows</div>
+
+        <div class="grid-3">
+          <div>
+            <label>Border Color</label>
+            <div class="color-picker">
+              <input type="color" id="cfgBorderColor" value="#333333" oninput="updatePreview()" />
+              <span id="cfgBorderColorVal">#333333</span>
+            </div>
+          </div>
+          <div>
+            <label for="cfgBorderWidth">Border Width (px)</label>
+            <input type="text" id="cfgBorderWidth" value="0" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgBorderStyle">Border Style</label>
+            <select id="cfgBorderStyle" onchange="updatePreview()">
+              <option value="solid" selected>Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+              <option value="double">Double</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="cfgRadius">Widget Corner Radius (px)</label>
+            <input type="text" id="cfgRadius" value="10" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgArtRadius">Album Cover Radius (px)</label>
+            <input type="text" id="cfgArtRadius" value="6" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="cfgShadow">Drop Shadow</label>
+            <select id="cfgShadow" onchange="updatePreview()">
+              <option value="none">None</option>
+              <option value="soft" selected>Soft Shadow</option>
+              <option value="hard">Hard Offset Block</option>
+              <option value="glow">Accent Glow</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgHideDelay">Hide Delay when Paused (s)</label>
+            <input type="number" id="cfgHideDelay" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = instant" />
+          </div>
+        </div>
+
+        <!-- Elements Display Options -->
+        <div class="section-divider">Visible Components</div>
+
+        <div class="grid-2">
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowArt" checked onchange="updatePreview()" />
+            <span>Album Cover Art</span>
+          </label>
+
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowBar" checked onchange="updatePreview()" />
+            <span>Progress Bar</span>
+          </label>
+        </div>
+
+        <!-- Twitch & Commands -->
+        <div class="section-divider">Twitch Integration</div>
+        <label for="cfgTwitchChannel">Twitch Channel Username</label>
+        <input type="text" id="cfgTwitchChannel" placeholder="e.g. your_twitch_channel" oninput="updatePreview()" />
+
+        <!-- ADVANCED SETTINGS TOGGLE -->
+        <button class="advanced-toggle" type="button" onclick="toggleAdvanced()">
+          <span>⚙️ Advanced Command Permissions & Limits</span>
+          <span id="advArrow">▼</span>
+        </button>
+
+        <!-- ADVANCED SETTINGS PANEL -->
+        <div id="advancedPanel" class="advanced-panel">
+          <div class="grid-2">
+            <div>
+              <label for="cfgReqCmd">Song Request Command</label>
+              <input type="text" id="cfgReqCmd" value="!request" oninput="updatePreview()" />
+            </div>
+            <div>
+              <label for="cfgClearCmd">Clear Queue Command</label>
+              <input type="text" id="cfgClearCmd" value="!clearqueue" oninput="updatePreview()" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label for="cfgReqPerm">Who Can Request Songs?</label>
+              <select id="cfgReqPerm" onchange="updatePreview()">
+                <option value="everyone" selected>Everyone</option>
+                <option value="vips">Subscribers & VIPs & Mods</option>
+                <option value="mods">Moderators & Broadcaster Only</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgClearPerm">Who Can Clear Queue?</label>
+              <select id="cfgClearPerm" onchange="updatePreview()">
+                <option value="mods" selected>Moderators & Broadcaster Only</option>
+                <option value="broadcaster">Broadcaster Only</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="cfgMaxDuration">Max Song Duration Limit (Minutes)</label>
+          <input type="number" id="cfgMaxDuration" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = No duration limit" />
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToPage('pageAuth')">&larr; Back to Step 1</button>
+          <button class="btn" onclick="goToPage('pageExport')">Next: Export URL &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: EXPORT LINK -->
+      <div id="pageExport" class="step-page">
+        <div class="page-header">
+          <h1 class="page-title">Export to OBS</h1>
+          <span class="step-badge">Step 3 of 3</span>
+        </div>
+        <p>Your custom Browser Source link is ready. Copy and paste this URL into OBS Studio.</p>
+
+        <label>OBS Browser Source URL</label>
+        <input type="text" id="obsUrlOutput" readonly />
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToPage('pageCustomize')">&larr; Back to Customize</button>
+          <button class="btn" onclick="copyObsUrl()">Copy Link</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OBS OVERLAY WIDGET VIEW -->
+  <div id="overlayView" class="widget">
+    <img id="albumArt" class="album-art" src="" alt="Album Art" />
+    <div class="info">
+      <div class="text-marquee-container">
+        <div id="title" class="title marquee-text">
+          <span id="trackNameText">Loading...</span>
+          <span class="eq-wave">
+            <span class="eq-bar"></span>
+            <span class="eq-bar"></span>
+            <span class="eq-bar"></span>
+          </span>
+        </div>
+      </div>
+      <div class="text-marquee-container">
+        <div id="artist" class="artist marquee-text"></div>
+      </div>
+      <div id="bar" class="bar"><div id="fill" class="fill"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
+    const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+    let currentPreset = 'default';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const isOverlayMode = urlParams.get('mode') === 'overlay' && urlParams.has('cid') && urlParams.has('refresh');
+
+      const redirectDisplay = document.getElementById('redirectUriDisplay');
+      if (redirectDisplay) {
+        redirectDisplay.value = REDIRECT_URI;
+      }
+
+      if (isOverlayMode) {
+        document.body.classList.add('overlay-mode');
+        const clientId = urlParams.get('cid');
+        const refreshToken = urlParams.get('refresh');
+        const twitchChannel = urlParams.get('channel');
+        
+        if (clientId && refreshToken) {
+          applyOverlaySettings(urlParams);
+          initOverlay(clientId, refreshToken, urlParams);
+          if (twitchChannel) {
+            initTwitchIntegration(twitchChannel, urlParams);
+          }
+        }
+      } else if (code) {
+        handleCallback(code);
+      } else {
+        document.body.classList.remove('overlay-mode');
+
+        const savedClientId = localStorage.getItem('spotify_client_id');
+        const savedRefreshToken = localStorage.getItem('spotify_refresh_token');
+
+        if (savedClientId && document.getElementById('clientIdInput')) {
+          document.getElementById('clientIdInput').value = savedClientId;
+        }
+
+        if (savedClientId && savedRefreshToken) {
+          goToPage('pageCustomize');
+        } else {
+          goToPage('pageAuth');
+        }
+      }
+    });
+
+    function toggleAdvanced() {
+      const panel = document.getElementById('advancedPanel');
+      const arrow = document.getElementById('advArrow');
+      if (panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        arrow.textContent = '▼';
+      } else {
+        panel.classList.add('open');
+        arrow.textContent = '▲';
+      }
+    }
+
+    function goToPage(pageId) {
+      document.querySelectorAll('.step-page').forEach(page => page.classList.remove('active'));
+      const target = document.getElementById(pageId);
+      if (target) target.classList.add('active');
+      if (pageId === 'pageCustomize' || pageId === 'pageExport') updatePreview();
+    }
+
+    function applyPreset(presetName) {
+      currentPreset = presetName;
+
+      if (presetName === 'persona5') {
+        document.getElementById('cfgBg').value = '#e60012';
+        document.getElementById('cfgText').value = '#ffffff';
+        document.getElementById('cfgAccent').value = '#ffffff';
+        document.getElementById('cfgBorderColor').value = '#000000';
+        document.getElementById('cfgBorderWidth').value = '2';
+        document.getElementById('cfgBorderStyle').value = 'solid';
+        document.getElementById('cfgFontFamily').value = "'Impact', sans-serif";
+        document.getElementById('cfgTextTransform').value = 'uppercase';
+        document.getElementById('cfgLetterSpacing').value = '1';
+        document.getElementById('cfgRadius').value = '0';
+        document.getElementById('cfgArtRadius').value = '0';
+        document.getElementById('cfgShadow').value = 'hard';
+      } else if (presetName === 'synthwave') {
+        document.getElementById('cfgBg').value = '#1a0933';
+        document.getElementById('cfgText').value = '#00f5d4';
+        document.getElementById('cfgAccent').value = '#f72585';
+        document.getElementById('cfgBorderColor').value = '#7b2cbf';
+        document.getElementById('cfgBorderWidth').value = '2';
+        document.getElementById('cfgBorderStyle').value = 'dashed';
+        document.getElementById('cfgFontFamily').value = 'monospace';
+        document.getElementById('cfgTextTransform').value = 'uppercase';
+        document.getElementById('cfgLetterSpacing').value = '2';
+        document.getElementById('cfgRadius').value = '8';
+        document.getElementById('cfgArtRadius').value = '4';
+        document.getElementById('cfgShadow').value = 'glow';
+      } else if (presetName === 'glass') {
+        document.getElementById('cfgBg').value = '#222222';
+        document.getElementById('cfgText').value = '#ffffff';
+        document.getElementById('cfgAccent').value = '#1db954';
+        document.getElementById('cfgBorderColor').value = '#ffffff';
+        document.getElementById('cfgBorderWidth').value = '1';
+        document.getElementById('cfgBorderStyle').value = 'solid';
+        document.getElementById('cfgFontFamily').value = 'sans-serif';
+        document.getElementById('cfgTextTransform').value = 'none';
+        document.getElementById('cfgLetterSpacing').value = '0';
+        document.getElementById('cfgRadius').value = '16';
+        document.getElementById('cfgArtRadius').value = '10';
+        document.getElementById('cfgShadow').value = 'soft';
+      } else if (presetName === 'gameboy') {
+        document.getElementById('cfgBg').value = '#8bac0f';
+        document.getElementById('cfgText').value = '#0f380f';
+        document.getElementById('cfgAccent').value = '#306230';
+        document.getElementById('cfgBorderColor').value = '#0f380f';
+        document.getElementById('cfgBorderWidth').value = '3';
+        document.getElementById('cfgBorderStyle').value = 'solid';
+        document.getElementById('cfgFontFamily').value = 'monospace';
+        document.getElementById('cfgTextTransform').value = 'uppercase';
+        document.getElementById('cfgLetterSpacing').value = '1';
+        document.getElementById('cfgRadius').value = '0';
+        document.getElementById('cfgArtRadius').value = '0';
+        document.getElementById('cfgShadow').value = 'hard';
+      } else if (presetName === 'cyberpunk') {
+        document.getElementById('cfgBg').value = '#fcee0a';
+        document.getElementById('cfgText').value = '#000000';
+        document.getElementById('cfgAccent').value = '#00f0ff';
+        document.getElementById('cfgBorderColor').value = '#000000';
+        document.getElementById('cfgBorderWidth').value = '3';
+        document.getElementById('cfgBorderStyle').value = 'solid';
+        document.getElementById('cfgFontFamily').value = "'Impact', sans-serif";
+        document.getElementById('cfgTextTransform').value = 'uppercase';
+        document.getElementById('cfgLetterSpacing').value = '2';
+        document.getElementById('cfgRadius').value = '0';
+        document.getElementById('cfgArtRadius').value = '0';
+        document.getElementById('cfgShadow').value = 'hard';
+      } else if (presetName === 'minimal') {
+        document.getElementById('cfgBg').value = '#000000';
+        document.getElementById('cfgText').value = '#e1e1e1';
+        document.getElementById('cfgAccent').value = '#ffffff';
+        document.getElementById('cfgBorderColor').value = '#222222';
+        document.getElementById('cfgBorderWidth').value = '1';
+        document.getElementById('cfgBorderStyle').value = 'solid';
+        document.getElementById('cfgFontFamily').value = 'sans-serif';
+        document.getElementById('cfgTextTransform').value = 'none';
+        document.getElementById('cfgLetterSpacing').value = '0';
+        document.getElementById('cfgRadius').value = '4';
+        document.getElementById('cfgArtRadius').value = '4';
+        document.getElementById('cfgShadow').value = 'none';
+      } else {
+        // Default
+        document.getElementById('cfgBg').value = '#121212';
+        document.getElementById('cfgText').value = '#ffffff';
+        document.getElementById('cfgAccent').value = '#1db954';
+        document.getElementById('cfgBorderColor').value = '#333333';
+        document.getElementById('cfgBorderWidth').value = '0';
+        document.getElementById('cfgBorderStyle').value = 'solid';
+        document.getElementById('cfgFontFamily').value = 'sans-serif';
+        document.getElementById('cfgTextTransform').value = 'none';
+        document.getElementById('cfgLetterSpacing').value = '0';
+        document.getElementById('cfgRadius').value = '10';
+        document.getElementById('cfgArtRadius').value = '6';
+        document.getElementById('cfgShadow').value = 'soft';
+      }
+      updatePreview();
+    }
+
+    function generateRandomString(length) {
+      const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const values = crypto.getRandomValues(new Uint8Array(length));
+      return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+    }
+
+    async function sha256(plain) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      return window.crypto.subtle.digest('SHA-256', data);
+    }
+
+    function base64urlencode(a) {
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+        .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    async function startAuth() {
+      const clientId = document.getElementById('clientIdInput').value.trim();
+      if (!clientId) return alert('Please enter your Spotify Client ID');
+
+      localStorage.setItem('spotify_client_id', clientId);
+
+      const codeVerifier = generateRandomString(64);
+      const hashed = await sha256(codeVerifier);
+      const codeChallenge = base64urlencode(hashed);
+
+      localStorage.setItem('code_verifier', codeVerifier);
+
+      const authUrl = new URL('https://accounts.spotify.com/authorize');
+      authUrl.search = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        scope: SCOPES,
+        code_challenge_method: 'S256',
+        code_challenge: codeChallenge,
+        redirect_uri: REDIRECT_URI
+      });
+
+      window.location.href = authUrl.toString();
+    }
+
+    async function handleCallback(authCode) {
+      const clientId = localStorage.getItem('spotify_client_id');
+      const codeVerifier = localStorage.getItem('code_verifier');
+
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: clientId,
+            grant_type: 'authorization_code',
+            code: authCode,
+            redirect_uri: REDIRECT_URI,
+            code_verifier: codeVerifier
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.refresh_token) {
+          localStorage.setItem('spotify_refresh_token', data.refresh_token);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          goToPage('pageCustomize');
+        } else {
+          alert('Failed to obtain refresh token from Spotify.');
+        }
+      } catch (e) {
+        alert('Authentication error: ' + e.message);
+      }
+    }
+
+    function checkAndApplyMarquee(element) {
+      if (!element) return;
+      const container = element.parentElement;
+      if (container && element.scrollWidth > container.clientWidth) {
+        element.classList.add('scroll');
+        // Duplicate text content for seamless marquee looping if not already done
+        if (!element.dataset.duplicated) {
+          element.innerHTML = `${element.innerHTML} &nbsp;&nbsp;&nbsp;&nbsp; ${element.innerHTML}`;
+          element.dataset.duplicated = 'true';
+        }
+      } else {
+        element.classList.remove('scroll');
+      }
+    }
+
+    function updatePreview() {
+      const layout = document.getElementById('cfgLayout').value;
+      const fontFamily = document.getElementById('cfgFontFamily').value;
+      const bg = document.getElementById('cfgBg').value;
+      const text = document.getElementById('cfgText').value;
+      const accent = document.getElementById('cfgAccent').value;
+      const borderColor = document.getElementById('cfgBorderColor').value;
+      const borderWidth = document.getElementById('cfgBorderWidth').value || '0';
+      const borderStyle = document.getElementById('cfgBorderStyle').value;
+      const radius = document.getElementById('cfgRadius').value || '0';
+      const artRadius = document.getElementById('cfgArtRadius').value || '0';
+      const width = document.getElementById('cfgWidth').value || '320';
+      const fontSize = document.getElementById('cfgFontSize').value || '13';
+      const padding = document.getElementById('cfgPadding').value || '10';
+      const textAlign = document.getElementById('cfgTextAlign').value;
+      const textTransform = document.getElementById('cfgTextTransform').value;
+      const letterSpacing = document.getElementById('cfgLetterSpacing').value || '0';
+      const shadow = document.getElementById('cfgShadow').value;
+      const hideDelay = document.getElementById('cfgHideDelay').value || '0';
+      const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
+      const showArt = document.getElementById('cfgShowArt').checked;
+      const showBar = document.getElementById('cfgShowBar').checked;
+
+      // Advanced Params
+      const reqCmd = document.getElementById('cfgReqCmd').value.trim() || '!request';
+      const clearCmd = document.getElementById('cfgClearCmd').value.trim() || '!clearqueue';
+      const reqPerm = document.getElementById('cfgReqPerm').value;
+      const clearPerm = document.getElementById('cfgClearPerm').value;
+      const maxDuration = document.getElementById('cfgMaxDuration').value || '0';
+
+      document.getElementById('cfgBgVal').textContent = bg;
+      document.getElementById('cfgTextVal').textContent = text;
+      document.getElementById('cfgAccentVal').textContent = accent;
+      document.getElementById('cfgBorderColorVal').textContent = borderColor;
+
+      const w = document.getElementById('previewWidget');
+      
+      // Clear preset dynamic classes
+      w.classList.remove('preset-persona5', 'preset-glass', 'preset-synthwave', 'preset-cyberpunk', 'preset-gameboy');
+
+      if (currentPreset === 'persona5') {
+        w.classList.add('preset-persona5');
+      } else if (currentPreset === 'glass') {
+        w.classList.add('preset-glass');
+      } else if (currentPreset === 'synthwave') {
+        w.classList.add('preset-synthwave');
+      } else if (currentPreset === 'cyberpunk') {
+        w.classList.add('preset-cyberpunk');
+      } else if (currentPreset === 'gameboy') {
+        w.classList.add('preset-gameboy');
+      }
+
+      w.style.background = currentPreset === 'glass' ? `${bg}aa` : bg;
+      w.style.color = text;
+      w.style.borderRadius = `${radius}px`;
+      w.style.width = `${width}px`;
+      w.style.padding = `${padding}px`;
+      w.style.fontFamily = fontFamily;
+      w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+
+      // Layout Adjustment
+      if (layout === 'vertical') {
+        w.classList.add('layout-vertical');
+      } else {
+        w.classList.remove('layout-vertical');
+      }
+
+      // Drop Shadows
+      if (shadow === 'soft') {
+        w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+      } else if (shadow === 'hard') {
+        w.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
+      } else if (shadow === 'glow') {
+        w.style.boxShadow = `0 0 14px ${accent}`;
+      } else if (currentPreset !== 'persona5' && currentPreset !== 'synthwave') {
+        w.style.boxShadow = 'none';
+      }
+      
+      const titleEl = document.getElementById('prevTitle');
+      const artistEl = document.getElementById('prevArtist');
+
+      titleEl.style.fontSize = `${fontSize}px`;
+      titleEl.style.textAlign = textAlign;
+      titleEl.style.textTransform = textTransform;
+      titleEl.style.letterSpacing = `${letterSpacing}px`;
+
+      artistEl.style.color = text;
+      artistEl.style.opacity = '0.75';
+      artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+      artistEl.style.textAlign = textAlign;
+      artistEl.style.textTransform = textTransform;
+      artistEl.style.letterSpacing = `${letterSpacing}px`;
+      
+      document.getElementById('prevBar').style.background = accent + '33';
+      document.getElementById('prevFill').style.background = accent;
+      
+      document.getElementById('prevAlbumArt').style.display = showArt ? 'block' : 'none';
+      document.getElementById('prevAlbumArt').style.borderRadius = `${artRadius}px`;
+      document.getElementById('prevBar').style.display = showBar ? 'block' : 'none';
+
+      checkAndApplyMarquee(titleEl);
+      checkAndApplyMarquee(artistEl);
+
+      const clientId = localStorage.getItem('spotify_client_id');
+      const refreshToken = localStorage.getItem('spotify_refresh_token');
+
+      if (clientId && refreshToken) {
+        const params = new URLSearchParams({
+          mode: 'overlay',
+          cid: clientId,
+          refresh: refreshToken,
+          preset: currentPreset,
+          layout: layout,
+          font: fontFamily,
+          bg: bg.replace('#', ''),
+          text: text.replace('#', ''),
+          accent: accent.replace('#', ''),
+          bc: borderColor.replace('#', ''),
+          bw: borderWidth,
+          bs: borderStyle,
+          rad: radius,
+          artrad: artRadius,
+          w: width,
+          fs: fontSize,
+          pad: padding,
+          align: textAlign,
+          tt: textTransform,
+          ls: letterSpacing,
+          shadow: shadow,
+          delay: hideDelay,
+          channel: channel,
+          art: showArt ? '1' : '0',
+          bar: showBar ? '1' : '0',
+          reqcmd: reqCmd,
+          clearcmd: clearCmd,
+          reqperm: reqPerm,
+          clearperm: clearPerm,
+          maxdur: maxDuration
+        });
+
+        document.getElementById('obsUrlOutput').value = `${REDIRECT_URI}?${params.toString()}`;
+      }
+    }
+
+    function copyObsUrl() {
+      const input = document.getElementById('obsUrlOutput');
+      input.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    }
+
+    function applyOverlaySettings(params) {
+      const w = document.getElementById('overlayView');
+      const preset = params.get('preset') || 'default';
+      const layout = params.get('layout') || 'horizontal';
+      const font = params.get('font') || 'sans-serif';
+      const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
+      const text = params.get('text') ? `#${params.get('text')}` : '#ffffff';
+      const accent = params.get('accent') ? `#${params.get('accent')}` : '#1db954';
+      const borderColor = params.get('bc') ? `#${params.get('bc')}` : '#333333';
+      const borderWidth = params.get('bw') || '0';
+      const borderStyle = params.get('bs') || 'solid';
+      const radius = params.get('rad') || '10';
+      const artRadius = params.get('artrad') || '6';
+      const width = params.get('w') || '320';
+      const fontSize = params.get('fs') || '13';
+      const padding = params.get('pad') || '10';
+      const textAlign = params.get('align') || 'left';
+      const textTransform = params.get('tt') || 'none';
+      const letterSpacing = params.get('ls') || '0';
+      const shadow = params.get('shadow') || 'soft';
+      const showArt = params.get('art') !== '0';
+      const showBar = params.get('bar') !== '0';
+
+      w.classList.remove('preset-persona5', 'preset-glass', 'preset-synthwave', 'preset-cyberpunk', 'preset-gameboy');
+
+      if (preset === 'persona5') {
+        w.classList.add('preset-persona5');
+      } else if (preset === 'glass') {
+        w.classList.add('preset-glass');
+      } else if (preset === 'synthwave') {
+        w.classList.add('preset-synthwave');
+      } else if (preset === 'cyberpunk') {
+        w.classList.add('preset-cyberpunk');
+      } else if (preset === 'gameboy') {
+        w.classList.add('preset-gameboy');
+      }
+
+      w.style.background = preset === 'glass' ? `${bg}aa` : bg;
+      w.style.color = text;
+      w.style.borderRadius = `${radius}px`;
+      w.style.width = `${width}px`;
+      w.style.padding = `${padding}px`;
+      w.style.fontFamily = font;
+      w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+
+      if (layout === 'vertical') {
+        w.classList.add('layout-vertical');
+      }
+
+      if (shadow === 'soft') {
+        w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+      } else if (shadow === 'hard') {
+        w.style.boxShadow = '5px 5px 0px rgba(0,0,0,0.8)';
+      } else if (shadow === 'glow') {
+        w.style.boxShadow = `0 0 14px ${accent}`;
+      } else if (preset !== 'persona5' && preset !== 'synthwave') {
+        w.style.boxShadow = 'none';
+      }
+
+      const titleEl = document.getElementById('title');
+      const artistEl = document.getElementById('artist');
+
+      titleEl.style.fontSize = `${fontSize}px`;
+      titleEl.style.textAlign = textAlign;
+      titleEl.style.textTransform = textTransform;
+      titleEl.style.letterSpacing = `${letterSpacing}px`;
+
+      artistEl.style.color = text;
+      artistEl.style.opacity = '0.75';
+      artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
+      artistEl.style.textAlign = textAlign;
+      artistEl.style.textTransform = textTransform;
+      artistEl.style.letterSpacing = `${letterSpacing}px`;
+
+      document.getElementById('bar').style.background = accent + '33';
+      document.getElementById('fill').style.background = accent;
+
+      document.getElementById('albumArt').style.display = showArt ? 'block' : 'none';
+      document.getElementById('albumArt').style.borderRadius = `${artRadius}px`;
+      document.getElementById('bar').style.display = showBar ? 'block' : 'none';
+    }
+
+    let activeSpotifyToken = null;
+    let lastTrackId = null;
+
+    function initOverlay(clientId, refreshToken, params) {
+      let pausedTimestamp = null;
+      const hideDelayMs = (parseInt(params.get('delay')) || 0) * 1000;
+
+      async function refreshAccessToken() {
+        try {
+          const response = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: clientId,
+              grant_type: 'refresh_token',
+              refresh_token: refreshToken
+            })
+          });
+          const data = await response.json();
+          activeSpotifyToken = data.access_token;
+        } catch (e) {}
+      }
+
+      function handlePlaybackStopped() {
+        if (!pausedTimestamp) pausedTimestamp = Date.now();
+        const elapsed = Date.now() - pausedTimestamp;
+        if (elapsed >= hideDelayMs) {
+          document.getElementById('overlayView').style.opacity = '0';
+          document.getElementById('overlayView').style.transform = 'translateY(10px)';
+        }
+      }
+
+      async function fetchNowPlaying() {
+        if (!activeSpotifyToken) await refreshAccessToken();
+        if (!activeSpotifyToken) return;
+
+        try {
+          const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+          });
+
+          if (res.status === 401) {
+            await refreshAccessToken();
+            return;
+          }
+
+          if (res.status === 204 || res.status > 400) {
+            handlePlaybackStopped();
+            return;
+          }
+
+          const data = await res.json();
+          if (!data.is_playing || !data.item) {
+            handlePlaybackStopped();
+            return;
+          }
+
+          pausedTimestamp = null;
+
+          const currentTrackId = data.item.id;
+          if (currentTrackId !== lastTrackId) {
+            lastTrackId = currentTrackId;
+
+            // Trigger re-entry entrance keyframe animation
+            const overlayWidget = document.getElementById('overlayView');
+            overlayWidget.style.animation = 'none';
+            overlayWidget.offsetHeight; // Reflow trigger
+            if (params.get('preset') === 'persona5') {
+              overlayWidget.style.animation = 'p5Glitch 0.4s ease-out';
+            } else {
+              overlayWidget.style.animation = 'cardFadeIn 0.4s ease-out';
+            }
+
+            const trackNameText = document.getElementById('trackNameText');
+            const artistEl = document.getElementById('artist');
+            
+            trackNameText.textContent = data.item.name;
+            artistEl.textContent = data.item.artists.map(a => a.name).join(', ');
+            document.getElementById('albumArt').src = data.item.album.images[0]?.url || '';
+
+            delete document.getElementById('title').dataset.duplicated;
+            delete artistEl.dataset.duplicated;
+
+            checkAndApplyMarquee(document.getElementById('title'));
+            checkAndApplyMarquee(artistEl);
+          }
+          
+          const percent = (data.progress_ms / data.item.duration_ms) * 100;
+          document.getElementById('fill').style.width = `${percent}%`;
+          
+          document.getElementById('overlayView').style.opacity = '1';
+          document.getElementById('overlayView').style.transform = 'translateY(0)';
+        } catch (e) {
+          handlePlaybackStopped();
+        }
+      }
+
+      setInterval(fetchNowPlaying, 3000);
+      fetchNowPlaying();
+    }
+
+    function initTwitchIntegration(channelName, params) {
+      const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+      const reqCmd = (params.get('reqcmd') || '!request').toLowerCase();
+      const clearCmd = (params.get('clearcmd') || '!clearqueue').toLowerCase();
+      const reqPerm = params.get('reqperm') || 'everyone';
+      const clearPerm = params.get('clearperm') || 'mods';
+      const maxDurMinutes = parseInt(params.get('maxdur')) || 0;
+
+      ws.onopen = () => {
+        ws.send('CAP REQ :twitch.tv/tags');
+        ws.send('PASS oauth:1234567890');
+        ws.send('NICK justinfan' + Math.floor(100000 + Math.random() * 900000));
+        ws.send(`JOIN #${channelName}`);
+      };
+
+      ws.onmessage = (event) => {
+        const msg = event.data;
+
+        if (msg.startsWith('PING')) {
+          ws.send('PONG :tmi.twitch.tv');
+          return;
+        }
+
+        if (msg.includes('PRIVMSG')) {
+          const textIndex = msg.indexOf(`PRIVMSG #${channelName} :`);
+          if (textIndex !== -1) {
+            const rawTags = msg.substring(0, textIndex).trim();
+            const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
+            const lowerMsg = chatText.toLowerCase();
+
+            const isBroadcaster = rawTags.includes('badges=broadcaster/') || rawTags.includes('badges=subscriber/0,broadcaster/');
+            const isMod = rawTags.includes('mod=1') || isBroadcaster;
+            const isVip = rawTags.includes('vip=1') || isMod;
+            const isSub = rawTags.includes('subscriber/') || isVip;
+
+            function hasPermission(level) {
+              if (level === 'everyone') return true;
+              if (level === 'vips') return isSub || isVip || isMod || isBroadcaster;
+              if (level === 'mods') return isMod || isBroadcaster;
+              if (level === 'broadcaster') return isBroadcaster;
+              return false;
+            }
+
+            if (lowerMsg === clearCmd) {
+              if (hasPermission(clearPerm)) {
+                clearSpotifyQueue();
+              }
+            } else if (lowerMsg.startsWith(reqCmd + ' ')) {
+              if (hasPermission(reqPerm)) {
+                const query = chatText.substring(reqCmd.length + 1).trim();
+                if (query.length > 0) {
+                  processSongRequest(query, maxDurMinutes);
+                }
+              }
+            }
+          }
+        }
+      };
+    }
+
+    async function processSongRequest(query, maxDurMinutes) {
+      if (!activeSpotifyToken) return;
+
+      try {
+        const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+
+        const searchData = await searchRes.json();
+        const track = searchData.tracks?.items?.[0];
+
+        if (!track) return;
+
+        if (maxDurMinutes > 0) {
+          const maxDurMs = maxDurMinutes * 60 * 1000;
+          if (track.duration_ms > maxDurMs) {
+            console.warn(`Track "${track.name}" exceeds max duration limit.`);
+            return;
+          }
+        }
+
+        await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(track.uri)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+      } catch (e) {
+        console.error('Song request processing failed:', e);
+      }
+    }
+
+    async function clearSpotifyQueue() {
+      if (!activeSpotifyToken) return;
+
+      try {
+        const queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+
+        if (!queueRes.ok) return;
+
+        const queueData = await queueRes.json();
+        const queuedTracks = queueData.queue || [];
+
+        for (let i = 0; i < queuedTracks.length; i++) {
+          await fetch('https://api.spotify.com/v1/me/player/next', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+          });
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      } catch (e) {
+        console.error('Failed to clear queue:', e);
+      }
+    }
+  </script>
+</body>
+</html>      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .page-header {
