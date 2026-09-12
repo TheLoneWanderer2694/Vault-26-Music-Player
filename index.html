@@ -34,7 +34,7 @@
       background: var(--card-bg);
       border-radius: 12px;
       padding: 32px;
-      max-width: 540px;
+      max-width: 580px;
       width: 100%;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
@@ -77,6 +77,38 @@
     .checkbox-group input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
     .checkbox-group span { font-size: 13px; color: var(--text); }
 
+    /* Collapsible Advanced Section */
+    .advanced-toggle {
+      background: #222222;
+      border: 1px solid #333;
+      color: var(--accent);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .advanced-toggle:hover { background: #282828; }
+
+    .advanced-panel {
+      display: none;
+      background: #141414;
+      border: 1px solid #282828;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .advanced-panel.open { display: block; }
+
     .btn-group { display: flex; gap: 10px; margin-top: 16px; }
 
     .btn {
@@ -97,12 +129,8 @@
     .btn-secondary:hover { background: #3e3e3e; }
 
     /* Strict Step Visibility */
-    .step-page {
-      display: none;
-    }
-    .step-page.active {
-      display: block;
-    }
+    .step-page { display: none; }
+    .step-page.active { display: block; }
 
     /* Live Preview Box */
     .preview-box {
@@ -142,9 +170,7 @@
       overflow: hidden;
     }
 
-    body.overlay-mode #dashboardView {
-      display: none !important;
-    }
+    body.overlay-mode #dashboardView { display: none !important; }
 
     body.overlay-mode #overlayView {
       display: flex !important;
@@ -154,9 +180,7 @@
       z-index: 9999;
     }
 
-    body:not(.overlay-mode) #overlayView {
-      display: none !important;
-    }
+    body:not(.overlay-mode) #overlayView { display: none !important; }
   </style>
 </head>
 <body>
@@ -267,6 +291,47 @@
           <span>Show Progress Bar</span>
         </label>
 
+        <!-- ADVANCED SETTINGS TOGGLE -->
+        <button class="advanced-toggle" type="button" onclick="toggleAdvanced()">
+          <span>⚙️ Advanced Settings & Permissions</span>
+          <span id="advArrow">▼</span>
+        </button>
+
+        <!-- ADVANCED SETTINGS PANEL -->
+        <div id="advancedPanel" class="advanced-panel">
+          <div class="grid-2">
+            <div>
+              <label for="cfgReqCmd">Song Request Command</label>
+              <input type="text" id="cfgReqCmd" value="!request" oninput="updatePreview()" />
+            </div>
+            <div>
+              <label for="cfgClearCmd">Clear Queue Command</label>
+              <input type="text" id="cfgClearCmd" value="!clearqueue" oninput="updatePreview()" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label for="cfgReqPerm">Who Can Request Songs?</label>
+              <select id="cfgReqPerm" onchange="updatePreview()">
+                <option value="everyone" selected>Everyone</option>
+                <option value="vips">Subscribers & VIPs & Mods</option>
+                <option value="mods">Moderators & Broadcaster Only</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgClearPerm">Who Can Clear Queue?</label>
+              <select id="cfgClearPerm" onchange="updatePreview()">
+                <option value="mods" selected>Moderators & Broadcaster Only</option>
+                <option value="broadcaster">Broadcaster Only</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="cfgMaxDuration">Max Song Duration Limit (Minutes)</label>
+          <input type="number" id="cfgMaxDuration" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = No duration limit" />
+        </div>
+
         <div class="btn-group">
           <button class="btn btn-secondary" onclick="goToPage('pageAuth')">&larr; Back to Step 1</button>
           <button class="btn" onclick="goToPage('pageExport')">Next: Export URL &rarr;</button>
@@ -304,7 +369,6 @@
   </div>
 
   <script>
-    // Scopes needed for song request queueing, clearing queue, and playback control
     const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const REDIRECT_URI = window.location.origin + window.location.pathname;
 
@@ -318,7 +382,6 @@
         redirectDisplay.value = REDIRECT_URI;
       }
 
-      // 1. OBS OVERLAY MODE
       if (isOverlayMode) {
         document.body.classList.add('overlay-mode');
         const clientId = urlParams.get('cid');
@@ -329,18 +392,12 @@
           applyOverlaySettings(urlParams);
           initOverlay(clientId, refreshToken, urlParams);
           if (twitchChannel) {
-            initTwitchIntegration(twitchChannel);
+            initTwitchIntegration(twitchChannel, urlParams);
           }
         }
-      }
-
-      // 2. AUTHENTICATION CALLBACK HANDLER
-      else if (code) {
+      } else if (code) {
         handleCallback(code);
-      }
-
-      // 3. DASHBOARD SETUP VIEW
-      else {
+      } else {
         document.body.classList.remove('overlay-mode');
 
         const savedClientId = localStorage.getItem('spotify_client_id');
@@ -358,23 +415,25 @@
       }
     });
 
-    // Navigation Control
-    function goToPage(pageId) {
-      document.querySelectorAll('.step-page').forEach(page => {
-        page.classList.remove('active');
-      });
-
-      const target = document.getElementById(pageId);
-      if (target) {
-        target.classList.add('active');
-      }
-
-      if (pageId === 'pageCustomize' || pageId === 'pageExport') {
-        updatePreview();
+    function toggleAdvanced() {
+      const panel = document.getElementById('advancedPanel');
+      const arrow = document.getElementById('advArrow');
+      if (panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        arrow.textContent = '▼';
+      } else {
+        panel.classList.add('open');
+        arrow.textContent = '▲';
       }
     }
 
-    // PKCE Security Helpers
+    function goToPage(pageId) {
+      document.querySelectorAll('.step-page').forEach(page => page.classList.remove('active'));
+      const target = document.getElementById(pageId);
+      if (target) target.classList.add('active');
+      if (pageId === 'pageCustomize' || pageId === 'pageExport') updatePreview();
+    }
+
     function generateRandomString(length) {
       const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       const values = crypto.getRandomValues(new Uint8Array(length));
@@ -392,7 +451,6 @@
         .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     }
 
-    // Start OAuth Flow
     async function startAuth() {
       const clientId = document.getElementById('clientIdInput').value.trim();
       if (!clientId) return alert('Please enter your Spotify Client ID');
@@ -418,7 +476,6 @@
       window.location.href = authUrl.toString();
     }
 
-    // Process OAuth Callback
     async function handleCallback(authCode) {
       const clientId = localStorage.getItem('spotify_client_id');
       const codeVerifier = localStorage.getItem('code_verifier');
@@ -443,14 +500,13 @@
           window.history.replaceState({}, document.title, window.location.pathname);
           goToPage('pageCustomize');
         } else {
-          alert('Failed to obtain refresh token from Spotify. Check that your Redirect URI matches in Spotify Developer Dashboard.');
+          alert('Failed to obtain refresh token from Spotify.');
         }
       } catch (e) {
         alert('Authentication error: ' + e.message);
       }
     }
 
-    // Live Preview & OBS URL Generator
     function updatePreview() {
       const bg = document.getElementById('cfgBg').value;
       const text = document.getElementById('cfgText').value;
@@ -462,6 +518,13 @@
       const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
       const showArt = document.getElementById('cfgShowArt').checked;
       const showBar = document.getElementById('cfgShowBar').checked;
+
+      // Advanced Params
+      const reqCmd = document.getElementById('cfgReqCmd').value.trim() || '!request';
+      const clearCmd = document.getElementById('cfgClearCmd').value.trim() || '!clearqueue';
+      const reqPerm = document.getElementById('cfgReqPerm').value;
+      const clearPerm = document.getElementById('cfgClearPerm').value;
+      const maxDuration = document.getElementById('cfgMaxDuration').value || '0';
 
       document.getElementById('cfgBgVal').textContent = bg;
       document.getElementById('cfgTextVal').textContent = text;
@@ -502,7 +565,12 @@
           delay: hideDelay,
           channel: channel,
           art: showArt ? '1' : '0',
-          bar: showBar ? '1' : '0'
+          bar: showBar ? '1' : '0',
+          reqcmd: reqCmd,
+          clearcmd: clearCmd,
+          reqperm: reqPerm,
+          clearperm: clearPerm,
+          maxdur: maxDuration
         });
 
         document.getElementById('obsUrlOutput').value = `${REDIRECT_URI}?${params.toString()}`;
@@ -513,10 +581,9 @@
       const input = document.getElementById('obsUrlOutput');
       input.select();
       document.execCommand('copy');
-      alert('Copied to clipboard! Paste this URL into an OBS Browser Source.');
+      alert('Copied to clipboard!');
     }
 
-    // Apply Settings inside OBS Overlay Mode
     function applyOverlaySettings(params) {
       const w = document.getElementById('overlayView');
       const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
@@ -546,10 +613,8 @@
       document.getElementById('bar').style.display = showBar ? 'block' : 'none';
     }
 
-    // Global Accessor for Spotify Token within Overlay Session
     let activeSpotifyToken = null;
 
-    // OBS Polling Engine
     function initOverlay(clientId, refreshToken, params) {
       let pausedTimestamp = null;
       const hideDelayMs = (parseInt(params.get('delay')) || 0) * 1000;
@@ -571,10 +636,7 @@
       }
 
       function handlePlaybackStopped() {
-        if (!pausedTimestamp) {
-          pausedTimestamp = Date.now();
-        }
-
+        if (!pausedTimestamp) pausedTimestamp = Date.now();
         const elapsed = Date.now() - pausedTimestamp;
         if (elapsed >= hideDelayMs) {
           document.getElementById('overlayView').style.opacity = '0';
@@ -624,11 +686,18 @@
       fetchNowPlaying();
     }
 
-    // Twitch Chat Anonymous IRC WebSocket Engine
-    function initTwitchIntegration(channelName) {
+    // Advanced Twitch Chat IRC Engine
+    function initTwitchIntegration(channelName, params) {
       const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
+      const reqCmd = (params.get('reqcmd') || '!request').toLowerCase();
+      const clearCmd = (params.get('clearcmd') || '!clearqueue').toLowerCase();
+      const reqPerm = params.get('reqperm') || 'everyone';
+      const clearPerm = params.get('clearperm') || 'mods';
+      const maxDurMinutes = parseInt(params.get('maxdur')) || 0;
+
       ws.onopen = () => {
+        ws.send('CAP REQ :twitch.tv/tags'); // Requests user tags (mod, sub, vip status)
         ws.send('PASS oauth:1234567890');
         ws.send('NICK justinfan' + Math.floor(100000 + Math.random() * 900000));
         ws.send(`JOIN #${channelName}`);
@@ -645,18 +714,36 @@
         if (msg.includes('PRIVMSG')) {
           const textIndex = msg.indexOf(`PRIVMSG #${channelName} :`);
           if (textIndex !== -1) {
+            const rawTags = msg.substring(0, textIndex).trim();
             const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
             const lowerMsg = chatText.toLowerCase();
 
-            // 1. Clear Queue Command
-            if (lowerMsg === '!clearqueue' || lowerMsg === '!clear') {
-              clearSpotifyQueue();
+            // Extract User Permissions from Tags
+            const isBroadcaster = rawTags.includes('badges=broadcaster/') || rawTags.includes('badges=subscriber/0,broadcaster/');
+            const isMod = rawTags.includes('mod=1') || isBroadcaster;
+            const isVip = rawTags.includes('vip=1') || isMod;
+            const isSub = rawTags.includes('subscriber/') || isVip;
+
+            // Permission Checker Helper
+            function hasPermission(level) {
+              if (level === 'everyone') return true;
+              if (level === 'vips') return isSub || isVip || isMod || isBroadcaster;
+              if (level === 'mods') return isMod || isBroadcaster;
+              if (level === 'broadcaster') return isBroadcaster;
+              return false;
             }
-            // 2. Request Song Command
-            else if (lowerMsg.startsWith('!request ')) {
-              const query = chatText.substring(9).trim();
-              if (query.length > 0) {
-                processSongRequest(query);
+
+            // Command Processing
+            if (lowerMsg === clearCmd) {
+              if (hasPermission(clearPerm)) {
+                clearSpotifyQueue();
+              }
+            } else if (lowerMsg.startsWith(reqCmd + ' ')) {
+              if (hasPermission(reqPerm)) {
+                const query = chatText.substring(reqCmd.length + 1).trim();
+                if (query.length > 0) {
+                  processSongRequest(query, maxDurMinutes);
+                }
               }
             }
           }
@@ -664,8 +751,7 @@
       };
     }
 
-    // Search Spotify & Add Song to Active Queue
-    async function processSongRequest(query) {
+    async function processSongRequest(query, maxDurMinutes) {
       if (!activeSpotifyToken) return;
 
       try {
@@ -678,6 +764,15 @@
 
         if (!track) return;
 
+        // Check Max Duration Guard
+        if (maxDurMinutes > 0) {
+          const maxDurMs = maxDurMinutes * 60 * 1000;
+          if (track.duration_ms > maxDurMs) {
+            console.warn(`Track "${track.name}" exceeds max duration limit.`);
+            return;
+          }
+        }
+
         await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(track.uri)}`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
@@ -687,12 +782,10 @@
       }
     }
 
-    // Clear Spotify Queue Engine
     async function clearSpotifyQueue() {
       if (!activeSpotifyToken) return;
 
       try {
-        // Fetch current queue contents
         const queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
           headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
         });
@@ -702,13 +795,11 @@
         const queueData = await queueRes.json();
         const queuedTracks = queueData.queue || [];
 
-        // Skip forward through all queued items
         for (let i = 0; i < queuedTracks.length; i++) {
           await fetch('https://api.spotify.com/v1/me/player/next', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
           });
-          // Short delay between API calls to prevent rate-limiting
           await new Promise(resolve => setTimeout(resolve, 200));
         }
       } catch (e) {
