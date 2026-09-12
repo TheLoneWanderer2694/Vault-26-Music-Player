@@ -542,7 +542,7 @@
           </div>
         </div>
 
-        <!-- Colors & Effects -->
+        <!-- Colors & Visual Effects -->
         <div class="section-divider">Colors & Visual Effects</div>
 
         <div class="grid-3">
@@ -552,6 +552,10 @@
               <input type="color" id="cfgBg" value="#121212" oninput="updatePreview()" />
               <span id="cfgBgVal">#121212</span>
             </div>
+            <label class="checkbox-group" style="margin-top: 6px;">
+              <input type="checkbox" id="cfgTransparentBg" onchange="updatePreview()" />
+              <span>Transparent BG</span>
+            </label>
           </div>
           <div>
             <label>Title Color</label>
@@ -964,7 +968,8 @@
 
       const layout = document.getElementById('cfgLayout')?.value || 'horizontal';
       const fontFamily = document.getElementById('cfgFontFamily')?.value || 'sans-serif';
-      const bg = document.getElementById('cfgBg')?.value || '#121212';
+      const isTransparent = document.getElementById('cfgTransparentBg')?.checked ?? false;
+      const bg = isTransparent ? 'transparent' : (document.getElementById('cfgBg')?.value || '#121212');
       const text = document.getElementById('cfgText')?.value || '#ffffff';
       const artistText = document.getElementById('cfgArtistText')?.value || '#b3b3b3';
       const accent = document.getElementById('cfgAccent')?.value || '#1db954';
@@ -997,7 +1002,7 @@
       const cooldown = document.getElementById('cfgCooldown')?.value || '30';
       const maxDuration = document.getElementById('cfgMaxDuration')?.value || '0';
 
-      if (document.getElementById('cfgBgVal')) document.getElementById('cfgBgVal').textContent = bg;
+      if (document.getElementById('cfgBgVal')) document.getElementById('cfgBgVal').textContent = isTransparent ? 'Transparent' : bg;
       if (document.getElementById('cfgTextVal')) document.getElementById('cfgTextVal').textContent = text;
       if (document.getElementById('cfgArtistTextVal')) document.getElementById('cfgArtistTextVal').textContent = artistText;
       if (document.getElementById('cfgAccentVal')) document.getElementById('cfgAccentVal').textContent = accent;
@@ -1082,7 +1087,7 @@
           refresh: refreshToken,
           layout: layout,
           font: fontFamily,
-          bg: bg.replace('#', ''),
+          bg: isTransparent ? 'transparent' : bg.replace('#', ''),
           text: text.replace('#', ''),
           atext: artistText.replace('#', ''),
           accent: accent.replace('#', ''),
@@ -1133,7 +1138,8 @@
 
       const layout = params.get('layout') || 'horizontal';
       const font = params.get('font') || 'sans-serif';
-      const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
+      const rawBg = params.get('bg');
+      const bg = rawBg === 'transparent' ? 'transparent' : (rawBg ? `#${rawBg}` : '#121212');
       const text = params.get('text') ? `#${params.get('text')}` : '#ffffff';
       const artistText = params.get('atext') ? `#${params.get('atext')}` : '#b3b3b3';
       const accent = params.get('accent') ? `#${params.get('accent')}` : '#1db954';
