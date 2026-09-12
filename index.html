@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spotify OBS Overlay Generator</title>
+  <title>Spotify OBS Overlay & Twitch Request Engine</title>
   <style>
     :root {
       --bg: #121212;
@@ -188,7 +188,7 @@
           <h1 class="page-title">Customize Widget</h1>
           <span class="step-badge">Step 2 of 3</span>
         </div>
-        <p>Adjust the visual settings in real time before exporting to OBS.</p>
+        <p>Adjust visual settings and configure Twitch chat commands.</p>
 
         <!-- Live Preview -->
         <label>Live Preview</label>
@@ -202,6 +202,10 @@
             </div>
           </div>
         </div>
+
+        <!-- Twitch Integration Settings -->
+        <label for="cfgTwitchChannel">Twitch Channel Username (For Song Requests)</label>
+        <input type="text" id="cfgTwitchChannel" placeholder="e.g. your_twitch_channel" oninput="updatePreview()" />
 
         <!-- Color Controls -->
         <div class="grid-2">
@@ -300,7 +304,8 @@
   </div>
 
   <script>
-    const SCOPES = 'user-read-currently-playing user-read-playback-state';
+    // Scopes needed for song request queueing & currently playing
+    const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const REDIRECT_URI = window.location.origin + window.location.pathname;
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -318,10 +323,14 @@
         document.body.classList.add('overlay-mode');
         const clientId = urlParams.get('cid');
         const refreshToken = urlParams.get('refresh');
+        const twitchChannel = urlParams.get('channel');
         
         if (clientId && refreshToken) {
           applyOverlaySettings(urlParams);
           initOverlay(clientId, refreshToken, urlParams);
+          if (twitchChannel) {
+            initTwitchIntegration(twitchChannel);
+          }
         }
       }
 
@@ -349,7 +358,7 @@
       }
     });
 
-    // Navigation Control: Shows exactly ONE step page at a time
+    // Navigation Control
     function goToPage(pageId) {
       document.querySelectorAll('.step-page').forEach(page => {
         page.classList.remove('active');
@@ -450,6 +459,7 @@
       const width = document.getElementById('cfgWidth').value || '320';
       const fontSize = document.getElementById('cfgFontSize').value || '13';
       const hideDelay = document.getElementById('cfgHideDelay').value || '0';
+      const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
       const showArt = document.getElementById('cfgShowArt').checked;
       const showBar = document.getElementById('cfgShowBar').checked;
 
@@ -471,7 +481,6 @@
       document.getElementById('prevBar').style.background = accent + '33';
       document.getElementById('prevFill').style.background = accent;
       
-      // Control Album Cover & Progress Bar Display
       document.getElementById('prevAlbumArt').style.display = showArt ? 'block' : 'none';
       document.getElementById('prevAlbumArt').style.borderRadius = `${Math.max(2, parseInt(radius) / 2)}px`;
       document.getElementById('prevBar').style.display = showBar ? 'block' : 'none';
@@ -491,6 +500,7 @@
           w: width,
           fs: fontSize,
           delay: hideDelay,
+          channel: channel,
           art: showArt ? '1' : '0',
           bar: showBar ? '1' : '0'
         });
@@ -536,9 +546,11 @@
       document.getElementById('bar').style.display = showBar ? 'block' : 'none';
     }
 
+    // Global Accessor for Spotify Token within Overlay Session
+    let activeSpotifyToken = null;
+
     // OBS Polling Engine
     function initOverlay(clientId, refreshToken, params) {
-      let accessToken = null;
       let pausedTimestamp = null;
       const hideDelayMs = (parseInt(params.get('delay')) || 0) * 1000;
 
@@ -554,7 +566,7 @@
             })
           });
           const data = await response.json();
-          accessToken = data.access_token;
+          activeSpotifyToken = data.access_token;
         } catch (e) {}
       }
 
@@ -570,12 +582,12 @@
       }
 
       async function fetchNowPlaying() {
-        if (!accessToken) await refreshAccessToken();
-        if (!accessToken) return;
+        if (!activeSpotifyToken) await refreshAccessToken();
+        if (!activeSpotifyToken) return;
 
         try {
           const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
           });
 
           if (res.status === 401) {
@@ -610,6 +622,66 @@
 
       setInterval(fetchNowPlaying, 3000);
       fetchNowPlaying();
+    }
+
+    // Twitch Chat Anonymous IRC WebSocket Engine
+    function initTwitchIntegration(channelName) {
+      const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+      ws.onopen = () => {
+        ws.send('PASS oauth:1234567890');
+        ws.send('NICK justinfan' + Math.floor(100000 + Math.random() * 900000));
+        ws.send(`JOIN #${channelName}`);
+      };
+
+      ws.onmessage = (event) => {
+        const msg = event.data;
+
+        if (msg.startsWith('PING')) {
+          ws.send('PONG :tmi.twitch.tv');
+          return;
+        }
+
+        if (msg.includes('PRIVMSG')) {
+          const textIndex = msg.indexOf(`PRIVMSG #${channelName} :`);
+          if (textIndex !== -1) {
+            const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
+
+            // Match !request command
+            if (chatText.toLowerCase().startsWith('!request ')) {
+              const query = chatText.substring(9).trim();
+              if (query.length > 0) {
+                processSongRequest(query);
+              }
+            }
+          }
+        }
+      };
+    }
+
+    // Search Spotify & Add Song to Active Queue
+    async function processSongRequest(query) {
+      if (!activeSpotifyToken) return;
+
+      try {
+        // Search track on Spotify
+        const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+
+        const searchData = await searchRes.json();
+        const track = searchData.tracks?.items?.[0];
+
+        if (!track) return;
+
+        // Post track URI to playback queue
+        await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(track.uri)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+      } catch (e) {
+        console.error('Song request processing failed:', e);
+      }
     }
   </script>
 </body>
