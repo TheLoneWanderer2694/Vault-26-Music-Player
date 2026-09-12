@@ -34,13 +34,12 @@
       background: var(--card-bg);
       border-radius: 12px;
       padding: 32px;
-      max-width: 580px;
+      max-width: 620px;
       width: 100%;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    /* Page Header */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -55,29 +54,40 @@
 
     p { color: var(--subtext); font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
     
-    label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; color: var(--subtext); }
+    label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; color: var(--subtext); letter-spacing: 0.5px; }
     input[type="text"], input[type="number"], select {
       width: 100%;
-      padding: 12px;
+      padding: 10px 12px;
       background: #282828;
       border: 1px solid #3e3e3e;
       border-radius: 6px;
       color: #fff;
       box-sizing: border-box;
-      margin-bottom: 16px;
-      font-size: 14px;
+      margin-bottom: 14px;
+      font-size: 13px;
     }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .color-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; background: #282828; padding: 6px 12px; border-radius: 6px; border: 1px solid #3e3e3e; }
-    .color-picker input[type="color"] { border: none; background: transparent; width: 32px; height: 32px; cursor: pointer; padding: 0; }
-    .color-picker span { font-size: 13px; color: #fff; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
-    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; cursor: pointer; }
+    .color-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: #282828; padding: 4px 10px; border-radius: 6px; border: 1px solid #3e3e3e; }
+    .color-picker input[type="color"] { border: none; background: transparent; width: 28px; height: 28px; cursor: pointer; padding: 0; }
+    .color-picker span { font-size: 12px; color: #fff; }
+
+    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; }
     .checkbox-group input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
     .checkbox-group span { font-size: 13px; color: var(--text); }
 
-    /* Collapsible Advanced Section */
+    .section-divider {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin: 20px 0 12px 0;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #333;
+    }
+
     .advanced-toggle {
       background: #222222;
       border: 1px solid #333;
@@ -90,7 +100,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 10px;
+      margin-top: 14px;
       margin-bottom: 16px;
       width: 100%;
       box-sizing: border-box;
@@ -109,7 +119,7 @@
 
     .advanced-panel.open { display: block; }
 
-    .btn-group { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
 
     .btn {
       width: 100%;
@@ -128,7 +138,6 @@
     .btn-secondary { background: #282828; color: var(--text); }
     .btn-secondary:hover { background: #3e3e3e; }
 
-    /* Strict Step Visibility */
     .step-page { display: none; }
     .step-page.active { display: block; }
 
@@ -138,16 +147,17 @@
       background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%);
       background-size: 20px 20px;
       background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-      padding: 24px;
+      padding: 30px;
       border-radius: 8px;
       display: flex;
       justify-content: center;
       align-items: center;
       margin-bottom: 20px;
       border: 1px solid #282828;
+      min-height: 120px;
     }
 
-    /* Shared Widget Component Styles */
+    /* Widget Styles */
     .widget {
       display: flex;
       align-items: center;
@@ -155,6 +165,21 @@
       padding: 10px;
       box-sizing: border-box;
       transition: opacity 0.5s ease;
+    }
+
+    .widget.layout-vertical {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .widget.layout-vertical .album-art {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
+
+    .widget.layout-vertical .info {
+      width: 100%;
     }
 
     .album-art { width: 52px; height: 52px; object-fit: cover; background: #282828; flex-shrink: 0; }
@@ -212,7 +237,6 @@
           <h1 class="page-title">Customize Widget</h1>
           <span class="step-badge">Step 2 of 3</span>
         </div>
-        <p>Adjust visual settings and configure Twitch chat commands.</p>
 
         <!-- Live Preview -->
         <label>Live Preview</label>
@@ -227,73 +251,120 @@
           </div>
         </div>
 
-        <!-- Twitch Integration Settings -->
-        <label for="cfgTwitchChannel">Twitch Channel Username (For Song Requests)</label>
-        <input type="text" id="cfgTwitchChannel" placeholder="e.g. your_twitch_channel" oninput="updatePreview()" />
-
-        <!-- Color Controls -->
+        <!-- Layout & Typography Settings -->
+        <div class="section-divider">Layout & Typography</div>
+        
         <div class="grid-2">
           <div>
-            <label>Background Color</label>
+            <label for="cfgLayout">Widget Layout</label>
+            <select id="cfgLayout" onchange="updatePreview()">
+              <option value="horizontal" selected>Horizontal (Compact)</option>
+              <option value="vertical">Vertical (Card)</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgFontFamily">Font Family</label>
+            <select id="cfgFontFamily" onchange="updatePreview()">
+              <option value="sans-serif" selected>Sans-Serif (Modern)</option>
+              <option value="serif">Serif (Classic)</option>
+              <option value="monospace">Monospace (Retro)</option>
+              <option value="'Impact', sans-serif">Impact (Bold)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label for="cfgWidth">Width (px)</label>
+            <input type="text" id="cfgWidth" value="320" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgFontSize">Font Size (px)</label>
+            <input type="text" id="cfgFontSize" value="13" oninput="updatePreview()" />
+          </div>
+          <div>
+            <label for="cfgPadding">Padding (px)</label>
+            <input type="text" id="cfgPadding" value="10" oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <!-- Colors & Effects -->
+        <div class="section-divider">Colors & Visual Effects</div>
+
+        <div class="grid-3">
+          <div>
+            <label>Background</label>
             <div class="color-picker">
               <input type="color" id="cfgBg" value="#121212" oninput="updatePreview()" />
               <span id="cfgBgVal">#121212</span>
             </div>
           </div>
           <div>
-            <label>Text Color</label>
+            <label>Text</label>
             <div class="color-picker">
               <input type="color" id="cfgText" value="#ffffff" oninput="updatePreview()" />
               <span id="cfgTextVal">#ffffff</span>
             </div>
           </div>
-        </div>
-
-        <div class="grid-2">
           <div>
-            <label>Accent / Progress Color</label>
+            <label>Accent Bar</label>
             <div class="color-picker">
               <input type="color" id="cfgAccent" value="#1db954" oninput="updatePreview()" />
               <span id="cfgAccentVal">#1db954</span>
             </div>
           </div>
-          <div>
-            <label>Border Radius (px)</label>
-            <input type="text" id="cfgRadius" value="10" oninput="updatePreview()" />
-          </div>
         </div>
 
-        <!-- Sizing & Timing -->
         <div class="grid-2">
           <div>
-            <label>Widget Width (px)</label>
-            <input type="text" id="cfgWidth" value="320" oninput="updatePreview()" />
+            <label for="cfgRadius">Widget Corner Radius (px)</label>
+            <input type="text" id="cfgRadius" value="10" oninput="updatePreview()" />
           </div>
           <div>
-            <label>Font Size (px)</label>
-            <input type="text" id="cfgFontSize" value="13" oninput="updatePreview()" />
+            <label for="cfgArtRadius">Album Cover Radius (px)</label>
+            <input type="text" id="cfgArtRadius" value="6" oninput="updatePreview()" />
           </div>
         </div>
 
-        <div>
-          <label>Hide Delay when Paused (seconds)</label>
-          <input type="number" id="cfgHideDelay" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = instant, 5 = wait 5s" />
+        <div class="grid-2">
+          <div>
+            <label for="cfgShadow">Drop Shadow</label>
+            <select id="cfgShadow" onchange="updatePreview()">
+              <option value="none">None</option>
+              <option value="soft" selected>Soft Shadow</option>
+              <option value="hard">Hard Contrast Shadow</option>
+              <option value="glow">Accent Glow</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgHideDelay">Hide Delay when Paused (s)</label>
+            <input type="number" id="cfgHideDelay" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = instant" />
+          </div>
         </div>
 
-        <!-- Component Display Options -->
-        <label class="checkbox-group">
-          <input type="checkbox" id="cfgShowArt" checked onchange="updatePreview()" />
-          <span>Show Album Cover Art</span>
-        </label>
+        <!-- Elements Display Options -->
+        <div class="section-divider">Visible Components</div>
 
-        <label class="checkbox-group">
-          <input type="checkbox" id="cfgShowBar" checked onchange="updatePreview()" />
-          <span>Show Progress Bar</span>
-        </label>
+        <div class="grid-2">
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowArt" checked onchange="updatePreview()" />
+            <span>Album Cover Art</span>
+          </label>
+
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowBar" checked onchange="updatePreview()" />
+            <span>Progress Bar</span>
+          </label>
+        </div>
+
+        <!-- Twitch & Commands -->
+        <div class="section-divider">Twitch Integration</div>
+        <label for="cfgTwitchChannel">Twitch Channel Username</label>
+        <input type="text" id="cfgTwitchChannel" placeholder="e.g. your_twitch_channel" oninput="updatePreview()" />
 
         <!-- ADVANCED SETTINGS TOGGLE -->
         <button class="advanced-toggle" type="button" onclick="toggleAdvanced()">
-          <span>⚙️ Advanced Settings & Permissions</span>
+          <span>⚙️ Advanced Command Permissions & Limits</span>
           <span id="advArrow">▼</span>
         </button>
 
@@ -508,12 +579,17 @@
     }
 
     function updatePreview() {
+      const layout = document.getElementById('cfgLayout').value;
+      const fontFamily = document.getElementById('cfgFontFamily').value;
       const bg = document.getElementById('cfgBg').value;
       const text = document.getElementById('cfgText').value;
       const accent = document.getElementById('cfgAccent').value;
       const radius = document.getElementById('cfgRadius').value || '0';
+      const artRadius = document.getElementById('cfgArtRadius').value || '0';
       const width = document.getElementById('cfgWidth').value || '320';
       const fontSize = document.getElementById('cfgFontSize').value || '13';
+      const padding = document.getElementById('cfgPadding').value || '10';
+      const shadow = document.getElementById('cfgShadow').value;
       const hideDelay = document.getElementById('cfgHideDelay').value || '0';
       const channel = document.getElementById('cfgTwitchChannel').value.trim().toLowerCase();
       const showArt = document.getElementById('cfgShowArt').checked;
@@ -535,6 +611,26 @@
       w.style.color = text;
       w.style.borderRadius = `${radius}px`;
       w.style.width = `${width}px`;
+      w.style.padding = `${padding}px`;
+      w.style.fontFamily = fontFamily;
+
+      // Layout Adjustment
+      if (layout === 'vertical') {
+        w.classList.add('layout-vertical');
+      } else {
+        w.classList.remove('layout-vertical');
+      }
+
+      // Drop Shadows
+      if (shadow === 'soft') {
+        w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+      } else if (shadow === 'hard') {
+        w.style.boxShadow = '4px 4px 0px rgba(0,0,0,0.8)';
+      } else if (shadow === 'glow') {
+        w.style.boxShadow = `0 0 12px ${accent}`;
+      } else {
+        w.style.boxShadow = 'none';
+      }
       
       document.getElementById('prevTitle').style.fontSize = `${fontSize}px`;
       document.getElementById('prevArtist').style.color = text;
@@ -545,7 +641,7 @@
       document.getElementById('prevFill').style.background = accent;
       
       document.getElementById('prevAlbumArt').style.display = showArt ? 'block' : 'none';
-      document.getElementById('prevAlbumArt').style.borderRadius = `${Math.max(2, parseInt(radius) / 2)}px`;
+      document.getElementById('prevAlbumArt').style.borderRadius = `${artRadius}px`;
       document.getElementById('prevBar').style.display = showBar ? 'block' : 'none';
 
       const clientId = localStorage.getItem('spotify_client_id');
@@ -556,12 +652,17 @@
           mode: 'overlay',
           cid: clientId,
           refresh: refreshToken,
+          layout: layout,
+          font: fontFamily,
           bg: bg.replace('#', ''),
           text: text.replace('#', ''),
           accent: accent.replace('#', ''),
           rad: radius,
+          artrad: artRadius,
           w: width,
           fs: fontSize,
+          pad: padding,
+          shadow: shadow,
           delay: hideDelay,
           channel: channel,
           art: showArt ? '1' : '0',
@@ -586,12 +687,17 @@
 
     function applyOverlaySettings(params) {
       const w = document.getElementById('overlayView');
+      const layout = params.get('layout') || 'horizontal';
+      const font = params.get('font') || 'sans-serif';
       const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
       const text = params.get('text') ? `#${params.get('text')}` : '#ffffff';
       const accent = params.get('accent') ? `#${params.get('accent')}` : '#1db954';
       const radius = params.get('rad') || '10';
+      const artRadius = params.get('artrad') || '6';
       const width = params.get('w') || '320';
       const fontSize = params.get('fs') || '13';
+      const padding = params.get('pad') || '10';
+      const shadow = params.get('shadow') || 'soft';
       const showArt = params.get('art') !== '0';
       const showBar = params.get('bar') !== '0';
 
@@ -599,6 +705,22 @@
       w.style.color = text;
       w.style.borderRadius = `${radius}px`;
       w.style.width = `${width}px`;
+      w.style.padding = `${padding}px`;
+      w.style.fontFamily = font;
+
+      if (layout === 'vertical') {
+        w.classList.add('layout-vertical');
+      }
+
+      if (shadow === 'soft') {
+        w.style.boxShadow = '0 8px 16px rgba(0,0,0,0.4)';
+      } else if (shadow === 'hard') {
+        w.style.boxShadow = '4px 4px 0px rgba(0,0,0,0.8)';
+      } else if (shadow === 'glow') {
+        w.style.boxShadow = `0 0 12px ${accent}`;
+      } else {
+        w.style.boxShadow = 'none';
+      }
 
       document.getElementById('title').style.fontSize = `${fontSize}px`;
       document.getElementById('artist').style.color = text;
@@ -609,7 +731,7 @@
       document.getElementById('fill').style.background = accent;
 
       document.getElementById('albumArt').style.display = showArt ? 'block' : 'none';
-      document.getElementById('albumArt').style.borderRadius = `${Math.max(2, parseInt(radius) / 2)}px`;
+      document.getElementById('albumArt').style.borderRadius = `${artRadius}px`;
       document.getElementById('bar').style.display = showBar ? 'block' : 'none';
     }
 
@@ -686,7 +808,6 @@
       fetchNowPlaying();
     }
 
-    // Advanced Twitch Chat IRC Engine
     function initTwitchIntegration(channelName, params) {
       const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
@@ -697,7 +818,7 @@
       const maxDurMinutes = parseInt(params.get('maxdur')) || 0;
 
       ws.onopen = () => {
-        ws.send('CAP REQ :twitch.tv/tags'); // Requests user tags (mod, sub, vip status)
+        ws.send('CAP REQ :twitch.tv/tags');
         ws.send('PASS oauth:1234567890');
         ws.send('NICK justinfan' + Math.floor(100000 + Math.random() * 900000));
         ws.send(`JOIN #${channelName}`);
@@ -718,13 +839,11 @@
             const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
             const lowerMsg = chatText.toLowerCase();
 
-            // Extract User Permissions from Tags
             const isBroadcaster = rawTags.includes('badges=broadcaster/') || rawTags.includes('badges=subscriber/0,broadcaster/');
             const isMod = rawTags.includes('mod=1') || isBroadcaster;
             const isVip = rawTags.includes('vip=1') || isMod;
             const isSub = rawTags.includes('subscriber/') || isVip;
 
-            // Permission Checker Helper
             function hasPermission(level) {
               if (level === 'everyone') return true;
               if (level === 'vips') return isSub || isVip || isMod || isBroadcaster;
@@ -733,7 +852,6 @@
               return false;
             }
 
-            // Command Processing
             if (lowerMsg === clearCmd) {
               if (hasPermission(clearPerm)) {
                 clearSpotifyQueue();
@@ -764,7 +882,6 @@
 
         if (!track) return;
 
-        // Check Max Duration Guard
         if (maxDurMinutes > 0) {
           const maxDurMs = maxDurMinutes * 60 * 1000;
           if (track.duration_ms > maxDurMs) {
