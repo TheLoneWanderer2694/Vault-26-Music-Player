@@ -262,6 +262,8 @@
   const TOKEN_EXPIRY_KEY = 'sw_spotify_token_expiry';
 
   const params = new URLSearchParams(window.location.search);
+  const isOBS = params.get('obs') === 'true';
+
   const config = {
     artSize: params.get('artSize') || localStorage.getItem('sw_artSize') || '56',
     artRadius: params.get('artRadius') || localStorage.getItem('sw_artRadius') || '8',
@@ -285,13 +287,19 @@
   const progressEl = document.getElementById('progress');
   const indicator = document.getElementById('indicator');
   const authTrigger = document.getElementById('authTrigger');
+  const configToggle = document.getElementById('configToggle');
+
+  // Hide the gear icon completely if opened in OBS mode
+  if (isOBS) {
+    configToggle.style.display = 'none';
+  }
 
   if (!config.showIndicator) indicator.style.display = 'none';
 
   authTrigger.addEventListener('click', async () => {
     if (SPOTIFY_CLIENT_ID === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
       trackEl.textContent = 'Set Client ID';
-      artistEl.textContent = 'Open gear menu top right';
+      artistEl.textContent = 'Open config page in browser';
       return;
     }
     await authenticate();
@@ -413,7 +421,7 @@
         return;
       }
       trackEl.textContent = 'Connect Spotify';
-      artistEl.textContent = 'Click settings gear ⚙';
+      artistEl.textContent = isOBS ? 'Authorize in browser first' : 'Click settings gear ⚙';
       return;
     }
 
@@ -464,12 +472,12 @@
 
   // === Config Panel & Link Generator Handlers ===
   const configPanel = document.getElementById('configPanel');
-  const configToggle = document.getElementById('configToggle');
   const generatedLinkOutput = document.getElementById('generatedLinkOutput');
 
   function updateGeneratedLink() {
     const baseUrl = window.location.origin + window.location.pathname;
     const queryParams = new URLSearchParams({
+      obs: 'true',
       artSize: document.getElementById('artSizeInput').value,
       artRadius: document.getElementById('artRadiusInput').value,
       titleColor: document.getElementById('titleColorInput').value,
@@ -497,7 +505,6 @@
     configPanel.classList.remove('hidden');
   });
 
-  // Live update generated link when inputs change inside the panel
   configPanel.querySelectorAll('input').forEach(input => {
     input.addEventListener('input', updateGeneratedLink);
     input.addEventListener('change', updateGeneratedLink);
@@ -506,7 +513,7 @@
   document.getElementById('copyLinkBtn').addEventListener('click', () => {
     generatedLinkOutput.select();
     navigator.clipboard.writeText(generatedLinkOutput.value);
-    document.getElementById('copyLinkBtn').textContent = 'Copied to Clipboard!';
+    document.getElementById('copyLinkBtn').textContent = 'Copied OBS Link!';
     setTimeout(() => { document.getElementById('copyLinkBtn').textContent = 'Copy Custom Link'; }, 2000);
   });
 
