@@ -189,15 +189,46 @@
       padding: 30px;
       border-radius: 8px;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       margin-bottom: 20px;
       border: 1px solid #282828;
       min-height: 140px;
       overflow: hidden;
+      position: relative;
+    }
+
+    .dashboard-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .dashboard-controls button {
+      background: #282828;
+      border: 1px solid #3e3e3e;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .dashboard-controls button:hover {
+      background: var(--accent);
+      border-color: var(--accent);
     }
 
     /* Base Widget Structure */
+    .widget-container {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      position: relative;
+    }
+
     .widget {
       display: flex;
       align-items: center;
@@ -321,6 +352,45 @@
       box-shadow: 0 0 6px #ffffff;
     }
 
+    /* Request Toast Notification */
+    .request-toast {
+      position: absolute;
+      top: -45px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(29, 185, 84, 0.95);
+      color: #000;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .request-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Queue Overlay Display */
+    .queue-panel {
+      margin-top: 8px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 11px;
+      display: none;
+    }
+
+    .queue-panel.active { display: block; }
+    .queue-title { font-weight: bold; margin-bottom: 4px; color: var(--accent); }
+    .queue-item { opacity: 0.8; margin-bottom: 2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+
     /* OBS Overlay Mode Override */
     body.overlay-mode {
       background: transparent !important;
@@ -376,24 +446,38 @@
         <!-- Live Preview -->
         <label>Live Preview</label>
         <div class="preview-box">
-          <div id="previewWidget" class="widget">
-            <img id="prevAlbumArt" class="album-art" src="https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b5485a036e" alt="Preview Art" />
-            <div class="info">
-              <div class="text-marquee-container">
-                <div id="prevTitle" class="title marquee-text">
-                  Song Title
-                  <span class="eq-wave">
-                    <span class="eq-bar"></span>
-                    <span class="eq-bar"></span>
-                    <span class="eq-bar"></span>
-                  </span>
+          <div id="prevToast" class="request-toast">🎵 Requested by Viewer!</div>
+          <div class="widget-container">
+            <div id="previewWidget" class="widget">
+              <img id="prevAlbumArt" class="album-art" src="https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b5485a036e" alt="Preview Art" />
+              <div class="info">
+                <div class="text-marquee-container">
+                  <div id="prevTitle" class="title marquee-text">
+                    Song Title
+                    <span class="eq-wave">
+                      <span class="eq-bar"></span>
+                      <span class="eq-bar"></span>
+                      <span class="eq-bar"></span>
+                    </span>
+                  </div>
                 </div>
+                <div class="text-marquee-container">
+                  <div id="prevArtist" class="artist marquee-text">Artist Name</div>
+                </div>
+                <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
               </div>
-              <div class="text-marquee-container">
-                <div id="prevArtist" class="artist marquee-text">Artist Name</div>
-              </div>
-              <div id="prevBar" class="bar"><div id="prevFill" class="fill"></div></div>
             </div>
+            <div id="prevQueue" class="queue-panel">
+              <div class="queue-title">Up Next:</div>
+              <div class="queue-item">1. Sample Queue Song - Artist</div>
+            </div>
+          </div>
+
+          <div class="dashboard-controls">
+            <button onclick="controlPlayback('previous')">⏮ Prev</button>
+            <button onclick="controlPlayback('play')">▶ Play</button>
+            <button onclick="controlPlayback('pause')">⏸ Pause</button>
+            <button onclick="controlPlayback('next')">⏭ Skip</button>
           </div>
         </div>
 
@@ -470,18 +554,37 @@
             </div>
           </div>
           <div>
-            <label>Text</label>
+            <label>Title Color</label>
             <div class="color-picker">
               <input type="color" id="cfgText" value="#ffffff" oninput="updatePreview()" />
               <span id="cfgTextVal">#ffffff</span>
             </div>
           </div>
           <div>
+            <label>Artist Color</label>
+            <div class="color-picker">
+              <input type="color" id="cfgArtistText" value="#b3b3b3" oninput="updatePreview()" />
+              <span id="cfgArtistTextVal">#b3b3b3</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
             <label>Accent Bar</label>
             <div class="color-picker">
               <input type="color" id="cfgAccent" value="#1db954" oninput="updatePreview()" />
               <span id="cfgAccentVal">#1db954</span>
             </div>
+          </div>
+          <div>
+            <label for="cfgShadow">Drop Shadow</label>
+            <select id="cfgShadow" onchange="updatePreview()">
+              <option value="none">None</option>
+              <option value="soft" selected>Soft Shadow</option>
+              <option value="hard">Hard Offset Block</option>
+              <option value="glow">Accent Glow</option>
+            </select>
           </div>
         </div>
 
@@ -524,15 +627,6 @@
 
         <div class="grid-2">
           <div>
-            <label for="cfgShadow">Drop Shadow</label>
-            <select id="cfgShadow" onchange="updatePreview()">
-              <option value="none">None</option>
-              <option value="soft" selected>Soft Shadow</option>
-              <option value="hard">Hard Offset Block</option>
-              <option value="glow">Accent Glow</option>
-            </select>
-          </div>
-          <div>
             <label for="cfgHideDelay">Hide Delay when Paused (s)</label>
             <input type="number" id="cfgHideDelay" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = instant" />
           </div>
@@ -546,15 +640,20 @@
         <!-- Elements Display Options -->
         <div class="section-divider">Visible Components</div>
 
-        <div class="grid-2">
+        <div class="grid-3">
           <label class="checkbox-group">
             <input type="checkbox" id="cfgShowArt" checked onchange="updatePreview()" />
-            <span>Album Cover Art</span>
+            <span>Album Cover</span>
           </label>
 
           <label class="checkbox-group">
             <input type="checkbox" id="cfgShowBar" checked onchange="updatePreview()" />
             <span>Progress Bar</span>
+          </label>
+
+          <label class="checkbox-group">
+            <input type="checkbox" id="cfgShowQueue" onchange="updatePreview()" />
+            <span>Show Queue</span>
           </label>
         </div>
 
@@ -565,16 +664,20 @@
 
         <!-- ADVANCED SETTINGS TOGGLE -->
         <button class="advanced-toggle" type="button" onclick="toggleAdvanced()">
-          <span>⚙️ Advanced Command Permissions & Limits</span>
+          <span>⚙️ Advanced Commands, Cooldowns & Permissions</span>
           <span id="advArrow">▼</span>
         </button>
 
         <!-- ADVANCED SETTINGS PANEL -->
         <div id="advancedPanel" class="advanced-panel">
-          <div class="grid-2">
+          <div class="grid-3">
             <div>
-              <label for="cfgReqCmd">Song Request Command</label>
+              <label for="cfgReqCmd">Request Command</label>
               <input type="text" id="cfgReqCmd" value="!request" oninput="updatePreview()" />
+            </div>
+            <div>
+              <label for="cfgSkipCmd">Skip Command</label>
+              <input type="text" id="cfgSkipCmd" value="!skip" oninput="updatePreview()" />
             </div>
             <div>
               <label for="cfgClearCmd">Clear Queue Command</label>
@@ -582,9 +685,9 @@
             </div>
           </div>
 
-          <div class="grid-2">
+          <div class="grid-3">
             <div>
-              <label for="cfgReqPerm">Who Can Request Songs?</label>
+              <label for="cfgReqPerm">Who Can Request?</label>
               <select id="cfgReqPerm" onchange="updatePreview()">
                 <option value="everyone" selected>Everyone</option>
                 <option value="vips">Subscribers & VIPs & Mods</option>
@@ -592,7 +695,15 @@
               </select>
             </div>
             <div>
-              <label for="cfgClearPerm">Who Can Clear Queue?</label>
+              <label for="cfgSkipPerm">Who Can Skip?</label>
+              <select id="cfgSkipPerm" onchange="updatePreview()">
+                <option value="mods" selected>Moderators & Broadcaster Only</option>
+                <option value="vips">VIPs & Mods</option>
+                <option value="everyone">Everyone</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgClearPerm">Who Can Clear?</label>
               <select id="cfgClearPerm" onchange="updatePreview()">
                 <option value="mods" selected>Moderators & Broadcaster Only</option>
                 <option value="broadcaster">Broadcaster Only</option>
@@ -600,8 +711,16 @@
             </div>
           </div>
 
-          <label for="cfgMaxDuration">Max Song Duration Limit (Minutes)</label>
-          <input type="number" id="cfgMaxDuration" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = No duration limit" />
+          <div class="grid-2">
+            <div>
+              <label for="cfgCooldown">User Request Cooldown (Seconds)</label>
+              <input type="number" id="cfgCooldown" value="30" min="0" step="1" oninput="updatePreview()" />
+            </div>
+            <div>
+              <label for="cfgMaxDuration">Max Song Duration Limit (Minutes)</label>
+              <input type="number" id="cfgMaxDuration" value="0" min="0" step="1" oninput="updatePreview()" placeholder="0 = No limit" />
+            </div>
+          </div>
         </div>
 
         <div class="btn-group">
@@ -631,29 +750,38 @@
   </div>
 
   <!-- OBS OVERLAY WIDGET VIEW -->
-  <div id="overlayView" class="widget">
-    <img id="albumArt" class="album-art" src="" alt="Album Art" />
-    <div class="info">
-      <div class="text-marquee-container">
-        <div id="title" class="title marquee-text">
-          <span id="trackNameText">Loading...</span>
-          <span class="eq-wave">
-            <span class="eq-bar"></span>
-            <span class="eq-bar"></span>
-            <span class="eq-bar"></span>
-          </span>
+  <div id="overlayView" class="widget-container">
+    <div id="overlayToast" class="request-toast">🎵 Requested!</div>
+    <div id="overlayWidget" class="widget">
+      <img id="albumArt" class="album-art" src="" alt="Album Art" />
+      <div class="info">
+        <div class="text-marquee-container">
+          <div id="title" class="title marquee-text">
+            <span id="trackNameText">Loading...</span>
+            <span class="eq-wave">
+              <span class="eq-bar"></span>
+              <span class="eq-bar"></span>
+              <span class="eq-bar"></span>
+            </span>
+          </div>
         </div>
+        <div class="text-marquee-container">
+          <div id="artist" class="artist marquee-text"></div>
+        </div>
+        <div id="bar" class="bar"><div id="fill" class="fill"></div></div>
       </div>
-      <div class="text-marquee-container">
-        <div id="artist" class="artist marquee-text"></div>
-      </div>
-      <div id="bar" class="bar"><div id="fill" class="fill"></div></div>
+    </div>
+    <div id="overlayQueue" class="queue-panel">
+      <div class="queue-title">Up Next:</div>
+      <div id="queueList"></div>
     </div>
   </div>
 
   <script>
     const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+    let userCooldowns = {};
 
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -820,6 +948,16 @@
       return str;
     }
 
+    function triggerToast(text, isOverlay = false) {
+      const toast = isOverlay ? document.getElementById('overlayToast') : document.getElementById('prevToast');
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+
     function updatePreview() {
       const previewWidget = document.getElementById('previewWidget');
       if (!previewWidget) return;
@@ -828,12 +966,13 @@
       const fontFamily = document.getElementById('cfgFontFamily')?.value || 'sans-serif';
       const bg = document.getElementById('cfgBg')?.value || '#121212';
       const text = document.getElementById('cfgText')?.value || '#ffffff';
+      const artistText = document.getElementById('cfgArtistText')?.value || '#b3b3b3';
       const accent = document.getElementById('cfgAccent')?.value || '#1db954';
       const borderColor = document.getElementById('cfgBorderColor')?.value || '#333333';
       const borderWidth = document.getElementById('cfgBorderWidth')?.value || '0';
       const borderStyle = document.getElementById('cfgBorderStyle')?.value || 'solid';
-      const radius = document.getElementById('cfgRadius')?.value || '0';
-      const artRadius = document.getElementById('cfgArtRadius')?.value || '0';
+      const radius = document.getElementById('cfgRadius')?.value || '10';
+      const artRadius = document.getElementById('cfgArtRadius')?.value || '6';
       const width = document.getElementById('cfgWidth')?.value || '320';
       const fontSize = document.getElementById('cfgFontSize')?.value || '13';
       const padding = document.getElementById('cfgPadding')?.value || '10';
@@ -845,17 +984,22 @@
       const channel = (document.getElementById('cfgTwitchChannel')?.value || '').trim().toLowerCase();
       const showArt = document.getElementById('cfgShowArt')?.checked ?? true;
       const showBar = document.getElementById('cfgShowBar')?.checked ?? true;
+      const showQueue = document.getElementById('cfgShowQueue')?.checked ?? false;
       const fallbackPlaylist = extractPlaylistId(document.getElementById('cfgFallbackPlaylist')?.value || '');
 
       // Advanced Params
       const reqCmd = (document.getElementById('cfgReqCmd')?.value || '!request').trim();
+      const skipCmd = (document.getElementById('cfgSkipCmd')?.value || '!skip').trim();
       const clearCmd = (document.getElementById('cfgClearCmd')?.value || '!clearqueue').trim();
       const reqPerm = document.getElementById('cfgReqPerm')?.value || 'everyone';
+      const skipPerm = document.getElementById('cfgSkipPerm')?.value || 'mods';
       const clearPerm = document.getElementById('cfgClearPerm')?.value || 'mods';
+      const cooldown = document.getElementById('cfgCooldown')?.value || '30';
       const maxDuration = document.getElementById('cfgMaxDuration')?.value || '0';
 
       if (document.getElementById('cfgBgVal')) document.getElementById('cfgBgVal').textContent = bg;
       if (document.getElementById('cfgTextVal')) document.getElementById('cfgTextVal').textContent = text;
+      if (document.getElementById('cfgArtistTextVal')) document.getElementById('cfgArtistTextVal').textContent = artistText;
       if (document.getElementById('cfgAccentVal')) document.getElementById('cfgAccentVal').textContent = accent;
       if (document.getElementById('cfgBorderColorVal')) document.getElementById('cfgBorderColorVal').textContent = borderColor;
 
@@ -866,6 +1010,12 @@
       previewWidget.style.padding = `${padding}px`;
       previewWidget.style.fontFamily = fontFamily;
       previewWidget.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+
+      const prevQueue = document.getElementById('prevQueue');
+      if (prevQueue) {
+        prevQueue.style.display = showQueue ? 'block' : 'none';
+        prevQueue.style.width = `${width}px`;
+      }
 
       if (layout === 'vertical') {
         previewWidget.classList.add('layout-vertical');
@@ -892,13 +1042,13 @@
 
       if (titleEl) {
         titleEl.style.fontSize = `${fontSize}px`;
+        titleEl.style.color = text;
         titleEl.style.textTransform = textTransform;
         titleEl.style.letterSpacing = `${letterSpacing}px`;
       }
 
       if (artistEl) {
-        artistEl.style.color = text;
-        artistEl.style.opacity = '0.75';
+        artistEl.style.color = artistText;
         artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
         artistEl.style.textTransform = textTransform;
         artistEl.style.letterSpacing = `${letterSpacing}px`;
@@ -934,6 +1084,7 @@
           font: fontFamily,
           bg: bg.replace('#', ''),
           text: text.replace('#', ''),
+          atext: artistText.replace('#', ''),
           accent: accent.replace('#', ''),
           bc: borderColor.replace('#', ''),
           bw: borderWidth,
@@ -951,11 +1102,15 @@
           channel: channel,
           art: showArt ? '1' : '0',
           bar: showBar ? '1' : '0',
+          queue: showQueue ? '1' : '0',
           fallback: fallbackPlaylist,
           reqcmd: reqCmd,
+          skipcmd: skipCmd,
           clearcmd: clearCmd,
           reqperm: reqPerm,
+          skipperm: skipPerm,
           clearperm: clearPerm,
+          cd: cooldown,
           maxdur: maxDuration
         });
 
@@ -972,13 +1127,15 @@
     }
 
     function applyOverlaySettings(params) {
-      const w = document.getElementById('overlayView');
-      if (!w) return;
+      const container = document.getElementById('overlayView');
+      const w = document.getElementById('overlayWidget');
+      if (!w || !container) return;
 
       const layout = params.get('layout') || 'horizontal';
       const font = params.get('font') || 'sans-serif';
       const bg = params.get('bg') ? `#${params.get('bg')}` : '#121212';
       const text = params.get('text') ? `#${params.get('text')}` : '#ffffff';
+      const artistText = params.get('atext') ? `#${params.get('atext')}` : '#b3b3b3';
       const accent = params.get('accent') ? `#${params.get('accent')}` : '#1db954';
       const borderColor = params.get('bc') ? `#${params.get('bc')}` : '#333333';
       const borderWidth = params.get('bw') || '0';
@@ -994,6 +1151,7 @@
       const shadow = params.get('shadow') || 'soft';
       const showArt = params.get('art') !== '0';
       const showBar = params.get('bar') !== '0';
+      const showQueue = params.get('queue') === '1';
 
       w.style.background = bg;
       w.style.color = text;
@@ -1002,6 +1160,12 @@
       w.style.padding = `${padding}px`;
       w.style.fontFamily = font;
       w.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+
+      const queuePanel = document.getElementById('overlayQueue');
+      if (queuePanel) {
+        queuePanel.style.display = showQueue ? 'block' : 'none';
+        queuePanel.style.width = `${width}px`;
+      }
 
       if (layout === 'vertical') {
         w.classList.add('layout-vertical');
@@ -1020,19 +1184,19 @@
       const titleEl = document.getElementById('title');
       const artistEl = document.getElementById('artist');
 
-      document.querySelectorAll('#overlayView .text-marquee-container').forEach(el => {
+      document.querySelectorAll('#overlayWidget .text-marquee-container').forEach(el => {
         el.style.textAlign = textAlign;
       });
 
       if (titleEl) {
         titleEl.style.fontSize = `${fontSize}px`;
+        titleEl.style.color = text;
         titleEl.style.textTransform = textTransform;
         titleEl.style.letterSpacing = `${letterSpacing}px`;
       }
 
       if (artistEl) {
-        artistEl.style.color = text;
-        artistEl.style.opacity = '0.75';
+        artistEl.style.color = artistText;
         artistEl.style.fontSize = `${parseInt(fontSize) - 2}px`;
         artistEl.style.textTransform = textTransform;
         artistEl.style.letterSpacing = `${letterSpacing}px`;
@@ -1058,10 +1222,28 @@
     let lastTrackId = null;
     let isTriggeringFallback = false;
 
+    async function controlPlayback(action) {
+      if (!activeSpotifyToken) return;
+      try {
+        let endpoint = `https://api.spotify.com/v1/me/player/${action}`;
+        let method = 'POST';
+        if (action === 'play' || action === 'pause') {
+          method = 'PUT';
+        }
+        await fetch(endpoint, {
+          method: method,
+          headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+        });
+      } catch (e) {
+        console.error(`Failed to execute ${action}:`, e);
+      }
+    }
+
     function initOverlay(clientId, refreshToken, params) {
       let pausedTimestamp = null;
       const hideDelayMs = (parseInt(params.get('delay')) || 0) * 1000;
       const fallbackPlaylistId = params.get('fallback');
+      const showQueue = params.get('queue') === '1';
 
       async function refreshAccessToken() {
         try {
@@ -1111,6 +1293,26 @@
             overlayWidget.style.opacity = '0';
             overlayWidget.style.transform = 'translateY(10px)';
           }
+        }
+      }
+
+      async function fetchQueue() {
+        if (!showQueue || !activeSpotifyToken) return;
+        try {
+          const res = await fetch('https://api.spotify.com/v1/me/player/queue', {
+            headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const queueListEl = document.getElementById('queueList');
+            if (queueListEl && data.queue) {
+              queueListEl.innerHTML = data.queue.slice(0, 3).map((item, idx) => 
+                `<div class="queue-item">${idx + 1}. ${item.name} - ${item.artists[0]?.name}</div>`
+              ).join('');
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching queue:', e);
         }
       }
 
@@ -1167,6 +1369,7 @@
 
             checkAndApplyMarquee(titleContainer);
             checkAndApplyMarquee(artistEl);
+            fetchQueue();
           }
           
           const percent = (data.progress_ms / data.item.duration_ms) * 100;
@@ -1190,9 +1393,12 @@
       const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
       const reqCmd = (params.get('reqcmd') || '!request').toLowerCase();
+      const skipCmd = (params.get('skipcmd') || '!skip').toLowerCase();
       const clearCmd = (params.get('clearcmd') || '!clearqueue').toLowerCase();
       const reqPerm = params.get('reqperm') || 'everyone';
+      const skipPerm = params.get('skipperm') || 'mods';
       const clearPerm = params.get('clearperm') || 'mods';
+      const cooldownSec = parseInt(params.get('cd')) || 30;
       const maxDurMinutes = parseInt(params.get('maxdur')) || 0;
 
       ws.onopen = () => {
@@ -1217,6 +1423,11 @@
             const chatText = msg.substring(textIndex + `PRIVMSG #${channelName} :`.length).trim();
             const lowerMsg = chatText.toLowerCase();
 
+            // Extract Username
+            let username = 'viewer';
+            const userMatch = rawTags.match(/display-name=([^;]+)/);
+            if (userMatch) username = userMatch[1];
+
             const isBroadcaster = rawTags.includes('badges=broadcaster/') || rawTags.includes('badges=subscriber/0,broadcaster/');
             const isMod = rawTags.includes('mod=1') || isBroadcaster;
             const isVip = rawTags.includes('vip=1') || isMod;
@@ -1234,11 +1445,21 @@
               if (hasPermission(clearPerm)) {
                 clearSpotifyQueue();
               }
+            } else if (lowerMsg === skipCmd) {
+              if (hasPermission(skipPerm)) {
+                controlPlayback('next');
+              }
             } else if (lowerMsg.startsWith(reqCmd + ' ')) {
               if (hasPermission(reqPerm)) {
+                const now = Date.now();
+                if (userCooldowns[username] && (now - userCooldowns[username]) < (cooldownSec * 1000)) {
+                  return; // Cooldown active
+                }
+
                 const query = chatText.substring(reqCmd.length + 1).trim();
                 if (query.length > 0) {
-                  processSongRequest(query, maxDurMinutes);
+                  userCooldowns[username] = now;
+                  processSongRequest(query, maxDurMinutes, username);
                 }
               }
             }
@@ -1247,7 +1468,7 @@
       };
     }
 
-    async function processSongRequest(query, maxDurMinutes) {
+    async function processSongRequest(query, maxDurMinutes, requester) {
       if (!activeSpotifyToken) return;
 
       try {
@@ -1272,6 +1493,8 @@
           method: 'POST',
           headers: { 'Authorization': `Bearer ${activeSpotifyToken}` }
         });
+
+        triggerToast(`🎵 ${track.name} added by ${requester}`, true);
       } catch (e) {
         console.error('Song request processing failed:', e);
       }
