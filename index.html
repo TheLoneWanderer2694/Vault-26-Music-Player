@@ -184,7 +184,7 @@
   </div>
 
   <!-- Config Panel -->
-  <div class="config-panel" id="configPanel">
+  <div class="config-panel hidden" id="configPanel">
     <h3>Widget Settings</h3>
     <div class="form-group">
       <label>Spotify Client ID</label>
@@ -227,18 +227,18 @@
       <label>Poll Interval (ms)</label>
       <input type="number" id="pollIntervalInput" min="1000" max="30000" step="1000" value="5000">
     </div>
-    <div class="form-row">
+    <div class="form-row" style="margin-bottom: 10px;">
       <button class="btn" id="saveConfigBtn">Save & Reload</button>
-      <button class="btn" id="clearAuthBtn">Clear Auth</button>
-      <button class="btn" id="closeConfigBtn">Close</button>
+      <button class="btn secondary" id="clearAuthBtn">Clear Auth</button>
+    </div>
+    <div class="form-row">
+      <button class="btn secondary" id="closeConfigBtn" style="width:100%;">Close</button>
     </div>
   </div>
 
   <button class="config-toggle" id="configToggle" title="Settings">⚙</button>
 
 <script>
-  // === Spotify Implicit Grant Flow (client-side, no server needed) ===
-  // Get your Client ID at https://developer.spotify.com/dashboard
   let SPOTIFY_CLIENT_ID = localStorage.getItem('sw_client_id') || 'YOUR_SPOTIFY_CLIENT_ID_HERE';
   const SPOTIFY_REDIRECT_URI = 'https://thelonewanderer2694.github.io/Vault-26-Music-Player/';
   const SCOPES = ['user-read-currently-playing', 'user-read-playback-state', 'user-read-private'];
@@ -255,7 +255,7 @@
     artistColor: params.get('artistColor') || localStorage.getItem('sw_artistColor') || '#b3b3b3',
     progressColor: params.get('progressColor') || localStorage.getItem('sw_progressColor') || '#1db954',
     bgColor: params.get('bgColor') || localStorage.getItem('sw_bgColor') || '#121212',
-    showIndicator: params.get('showIndicator') !== 'false',
+    showIndicator: params.get('showIndicator') !== 'false' && (localStorage.getItem('sw_showIndicator') !== 'false'),
     pollInterval: parseInt(params.get('pollInterval') || localStorage.getItem('sw_pollInterval') || '5000'),
   };
 
@@ -263,20 +263,19 @@
     document.documentElement.style.setProperty('--' + key.replace(/([A-Z])/g, '-$1').toLowerCase(), config[key]);
   });
 
-const art = document.getElementById('art');
-    const trackEl = document.getElementById('track');
-    const artistEl = document.getElementById('artist');
-    const progressEl = document.getElementById('progress');
-    const indicator = document.getElementById('indicator');
-    const authTrigger = document.getElementById('authTrigger');
+  const art = document.getElementById('art');
+  const trackEl = document.getElementById('track');
+  const artistEl = document.getElementById('artist');
+  const progressEl = document.getElementById('progress');
+  const indicator = document.getElementById('indicator');
+  const authTrigger = document.getElementById('authTrigger');
 
   if (!config.showIndicator) indicator.style.display = 'none';
 
-  // Click widget to authenticate
   authTrigger.addEventListener('click', async () => {
     if (SPOTIFY_CLIENT_ID === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
       trackEl.textContent = 'Set Client ID';
-      artistEl.textContent = 'Edit HTML source';
+      artistEl.textContent = 'Open gear menu top right';
       return;
     }
     await authenticate();
@@ -300,7 +299,6 @@ const art = document.getElementById('art');
   }
 
   async function authenticate() {
-    // PKCE flow: generate code_verifier + code_challenge
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     localStorage.setItem('sw_code_verifier', codeVerifier);
@@ -343,7 +341,6 @@ const art = document.getElementById('art');
     return data.access_token;
   }
 
-  // Generate a random code_verifier (43-128 chars)
   function generateCodeVerifier() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     let result = '';
@@ -353,7 +350,6 @@ const art = document.getElementById('art');
     return result;
   }
 
-  // Generate S256 code_challenge from verifier
   async function generateCodeChallenge(verifier) {
     const encoder = new TextEncoder();
     const data = encoder.encode(verifier);
@@ -366,12 +362,10 @@ const art = document.getElementById('art');
     const res = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    if (res.status === 204 || res.status === 401) {
-      if (res.status === 401) {
-        clearToken();
-        authenticate();
-      }
-      return res.status === 204 ? null : null;
+    if (res.status === 204) return null;
+    if (res.status === 401) {
+      clearToken();
+      return null;
     }
     if (!res.ok) {
       throw new Error('API error: ' + res.status);
@@ -380,14 +374,12 @@ const art = document.getElementById('art');
   }
 
   async function fetchStatus() {
-    // Check for authorization code in URL (after Spotify redirect)
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     if (authCode) {
       try {
-        const token = await exchangeCodeForToken(authCode);
-        window.history.replaceState({}, document.title, window.location.pathname + window.location.search.replace(/[?&]code=[^&]*/, ''));
-        return fetchStatus();
+        await exchangeCodeForToken(authCode);
+        window.history.replaceState({}, document.title, window.location.pathname);
       } catch (e) {
         console.error('Token exchange error:', e);
         trackEl.textContent = 'Auth failed';
@@ -399,63 +391,54 @@ const art = document.getElementById('art');
     let token = getAccessToken();
     if (!token) {
       if (SPOTIFY_CLIENT_ID !== 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
+        trackEl.textContent = 'Authenticating...';
+        artistEl.textContent = 'Redirecting to Spotify';
         setTimeout(authenticate, 500);
-        trackEl.textContent = 'Redirecting to Spotify...';
-        artistEl.textContent = 'Please authorize the widget';
         return;
       }
       trackEl.textContent = 'Connect Spotify';
-      artistEl.textContent = 'Click to authenticate';
+      artistEl.textContent = 'Click settings gear ⚙';
       return;
     }
+
     try {
       const data = await apiFetch(
         'https://api.spotify.com/v1/me/player/currently-playing?additional_types=track',
         token
       );
-      console.log('Spotify API response:', data);
+
       if (data && data.item) {
         const item = data.item;
-        console.log('Track:', item.name, 'by', item.artists?.map(a=>a.name).join(', '));
-        console.log('Album images:', item.album?.images);
-        if (data.isPlaying) {
+        if (data.is_playing) {
           if (item.album && item.album.images && item.album.images.length) {
             const url = item.album.images[0].url;
-            console.log('Album art URL:', url);
             if (url !== lastArtUrl) {
+              art.style.opacity = '0';
               art.src = url;
-              art.onload = () => {
-                art.style.opacity = '1';
-              };
-              art.onerror = () => {
-                console.error('Failed to load album art:', url);
-              };
-              art.classList.remove('fade-in');
-              void art.offsetWidth;
-              art.classList.add('fade-in');
+              art.onload = () => { art.style.opacity = '1'; };
               lastArtUrl = url;
             }
           }
           trackEl.textContent = item.name || 'Unknown track';
           artistEl.textContent = item.artists ? item.artists.map(a => a.name).join(', ') : 'Unknown artist';
           if (data.duration_ms > 0) {
-            progressEl.style.width = ((item.progress_ms / data.duration_ms) * 100) + '%';
+            progressEl.style.width = ((data.progress_ms / data.duration_ms) * 100) + '%';
           }
         } else {
-          art.style.opacity = '0';
-          trackEl.textContent = 'Paused';
-          artistEl.textContent = item.artists ? item.artists.map(a => a.name).join(', ') : 'Nothing playing';
+          art.style.opacity = '0.5';
+          trackEl.textContent = 'Paused: ' + (item.name || '');
+          artistEl.textContent = item.artists ? item.artists.map(a => a.name).join(', ') : '';
           progressEl.style.width = '0%';
         }
       } else {
-        art.style.opacity = '0';
+        art.style.opacity = '0.2';
         trackEl.textContent = 'Nothing playing';
-        artistEl.textContent = 'Press play in Spotify';
+        artistEl.textContent = 'Play a track on Spotify';
         progressEl.style.width = '0%';
       }
     } catch (e) {
       console.error('Fetch error:', e);
-      trackEl.textContent = 'Auth required';
+      trackEl.textContent = 'Auth expired';
       artistEl.textContent = 'Click to reconnect';
     }
   }
@@ -468,8 +451,7 @@ const art = document.getElementById('art');
   const configToggle = document.getElementById('configToggle');
 
   configToggle.addEventListener('click', () => {
-    // Populate config panel with current values
-    document.getElementById('clientIdInput').value = SPOTIFY_CLIENT_ID;
+    document.getElementById('clientIdInput').value = SPOTIFY_CLIENT_ID === 'YOUR_SPOTIFY_CLIENT_ID_HERE' ? '' : SPOTIFY_CLIENT_ID;
     document.getElementById('artSizeInput').value = config.artSize;
     document.getElementById('artRadiusInput').value = config.artRadius;
     document.getElementById('titleColorInput').value = config.titleColor;
@@ -489,7 +471,6 @@ const art = document.getElementById('art');
     const newClientId = document.getElementById('clientIdInput').value.trim();
     if (newClientId) {
       localStorage.setItem('sw_client_id', newClientId);
-      SPOTIFY_CLIENT_ID = newClientId;
     }
     localStorage.setItem('sw_artSize', document.getElementById('artSizeInput').value);
     localStorage.setItem('sw_artRadius', document.getElementById('artRadiusInput').value);
@@ -500,12 +481,12 @@ const art = document.getElementById('art');
     localStorage.setItem('sw_showIndicator', document.getElementById('showIndicatorInput').checked);
     localStorage.setItem('sw_pollInterval', document.getElementById('pollIntervalInput').value);
 
-    // Reload to apply changes
     location.reload();
   });
 
   document.getElementById('clearAuthBtn').addEventListener('click', () => {
     clearToken();
+    localStorage.removeItem('sw_client_id');
     configPanel.classList.add('hidden');
     location.reload();
   });
