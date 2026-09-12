@@ -278,4 +278,248 @@
   });
 </script>
 </body>
+</html>    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .info { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; flex: 1; }
+  .track {
+    font-size: var(--title-size);
+    font-weight: 600;
+    color: var(--title-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .artist {
+    font-size: var(--artist-size);
+    font-weight: 400;
+    color: var(--artist-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .art-container { position: relative; flex-shrink: 0; cursor: pointer; }
+  .hidden { display: none !important; }
+  .config-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 100;
+  }
+  .config-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 360px;
+    height: 100vh;
+    background: #181818;
+    border-left: 1px solid #333;
+    padding: 24px;
+    overflow-y: auto;
+    z-index: 99;
+    color: #fff;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; color: #b3b3b3; margin-bottom: 6px; text-transform: uppercase; }
+  .form-group input { width: 100%; padding: 8px; background: #121212; border: 1px solid #333; color: #fff; border-radius: 4px; }
+  .form-group textarea { width: 100%; height: 50px; background: #121212; border: 1px solid #333; color: #fff; font-size: 11px; resize: none; }
+  .form-row { display: flex; gap: 8px; }
+  .btn { padding: 8px 12px; background: #1db954; color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  .btn.secondary { background: #333; color: #fff; }
+</style>
+</head>
+<body>
+  <div class="art-container" id="authTrigger" title="Click to authorize">
+    <div class="art" id="art"></div>
+  </div>
+  <div class="info">
+    <div class="track" id="track">Initializing...</div>
+    <div class="artist" id="artist">Checking connection</div>
+  </div>
+
+  <div class="config-panel hidden" id="configPanel">
+    <h3>Widget Settings</h3>
+    <div class="form-group">
+      <label>Spotify Client ID</label>
+      <input type="text" id="clientIdInput" placeholder="Paste Client ID">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Art Size</label><input type="number" id="artSizeInput" value="56"></div>
+      <div class="form-group"><label>Radius</label><input type="number" id="artRadiusInput" value="8"></div>
+    </div>
+    <div class="form-group">
+      <label>Your Custom OBS Link</label>
+      <textarea id="generatedLinkOutput" readonly></textarea>
+      <button class="btn secondary" id="copyLinkBtn" style="width:100%; margin-top:4px;">Copy OBS Link</button>
+    </div>
+    <button class="btn" id="saveConfigBtn">Save & Reload</button>
+    <button class="btn secondary" id="clearAuthBtn" style="margin-left:4px;">Clear Auth</button>
+    <button class="btn secondary" id="closeConfigBtn" style="float:right;">Close</button>
+  </div>
+
+  <button class="config-toggle" id="configToggle">⚙</button>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const isOBS = params.get('obs') === 'true';
+  const clientId = localStorage.getItem('sw_client_id') || 'YOUR_SPOTIFY_CLIENT_ID_HERE';
+  const redirectUri = 'https://thelonewanderer2694.github.io/Vault-26-Music-Player/';
+
+  if (isOBS) document.getElementById('configToggle').style.display = 'none';
+
+  // Apply visual settings safely
+  const artSize = params.get('artSize') || localStorage.getItem('sw_artSize') || '56';
+  const artRadius = params.get('artRadius') || localStorage.getItem('sw_artRadius') || '8';
+  document.documentElement.style.setProperty('--art-size', artSize + 'px');
+  document.documentElement.style.setProperty('--art-radius', artRadius + 'px');
+
+  const trackEl = document.getElementById('track');
+  const artistEl = document.getElementById('artist');
+  const artEl = document.getElementById('art');
+
+  // Helper cryptographic generation for PKCE
+  function generateRandomString(length) {
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const values = crypto.getRandomValues(new Uint8Array(length));
+    return values.reduce((acc, x) => acc + possible[x % possible.length], '');
+  }
+
+  async function generateCodeChallenge(codeVerifier) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  }
+
+  document.getElementById('authTrigger').addEventListener('click', async () => {
+    if (clientId === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
+      trackEl.textContent = 'Client ID Missing';
+      artistEl.textContent = 'Open config in browser ⚙';
+      return;
+    }
+    const codeVerifier = generateRandomString(64);
+    localStorage.setItem('sw_code_verifier', codeVerifier);
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+    const authUrl = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      scope: 'user-read-currently-playing user-read-playback-state user-read-private',
+      code_challenge_method: 'S256',
+      code_challenge: codeChallenge,
+      redirect_uri: redirectUri,
+    });
+    window.location.href = authUrl;
+  });
+
+  async function init() {
+    const code = params.get('code');
+    if (code) {
+      const verifier = localStorage.getItem('sw_code_verifier');
+      try {
+        const res = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectUri,
+            client_id: clientId,
+            code_verifier: verifier,
+          })
+        });
+        const data = await res.json();
+        if (data.access_token) {
+          localStorage.setItem('sw_spotify_token', data.access_token);
+          window.history.replaceState({}, document.title, window.location.pathname + (isOBS ? '?obs=true' : ''));
+        }
+      } catch (err) {
+        console.error('Token exchange error:', err);
+      }
+    }
+
+    const token = localStorage.getItem('sw_spotify_token');
+    if (!token) {
+      trackEl.textContent = 'Connect Spotify';
+      artistEl.textContent = isOBS ? 'Interact & click art to log in' : 'Click gear ⚙ to setup';
+      return;
+    }
+
+    fetchPlayback();
+    setInterval(fetchPlayback, 5000);
+  }
+
+  async function fetchPlayback() {
+    const token = localStorage.getItem('sw_spotify_token');
+    if (!token) return;
+
+    try {
+      const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.status === 204 || res.status === 304) {
+        trackEl.textContent = 'Nothing playing';
+        artistEl.textContent = 'Play music on Spotify app';
+        artEl.style.backgroundImage = 'none';
+        return;
+      }
+
+      if (res.status === 401) {
+        localStorage.removeItem('sw_spotify_token');
+        trackEl.textContent = 'Session Expired';
+        artistEl.textContent = 'Click to re-authorize';
+        return;
+      }
+
+      const data = await res.json();
+      if (data && data.item) {
+        trackEl.textContent = data.item.name;
+        artistEl.textContent = data.item.artists.map(a => a.name).join(', ');
+        if (data.item.album && data.item.album.images && data.item.album.images.length > 0) {
+          artEl.style.backgroundImage = `url(${data.item.album.images[0].url})`;
+        }
+      }
+    } catch (e) {
+      trackEl.textContent = 'API Connection Error';
+      artistEl.textContent = 'Check console for details';
+    }
+  }
+
+  init();
+
+  // Config panel controls
+  const panel = document.getElementById('configPanel');
+  document.getElementById('configToggle').addEventListener('click', () => {
+    document.getElementById('clientIdInput').value = clientId === 'YOUR_SPOTIFY_CLIENT_ID_HERE' ? '' : clientId;
+    const query = new URLSearchParams({ obs: 'true', artSize, artRadius }).toString();
+    document.getElementById('generatedLinkOutput').value = window.location.origin + window.location.pathname + '?' + query;
+    panel.classList.remove('hidden');
+  });
+  document.getElementById('closeConfigBtn').addEventListener('click', () => panel.classList.add('hidden'));
+  document.getElementById('saveConfigBtn').addEventListener('click', () => {
+    const val = document.getElementById('clientIdInput').value.trim();
+    if (val) localStorage.setItem('sw_client_id', val);
+    localStorage.setItem('sw_artSize', document.getElementById('artSizeInput').value);
+    localStorage.setItem('sw_artRadius', document.getElementById('artRadiusInput').value);
+    location.reload();
+  });
+  document.getElementById('clearAuthBtn').addEventListener('click', () => {
+    localStorage.removeItem('sw_spotify_token');
+    localStorage.removeItem('sw_code_verifier');
+    localStorage.removeItem('sw_client_id');
+    location.reload();
+  });
+  document.getElementById('copyLinkBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('generatedLinkOutput').value);
+    document.getElementById('copyLinkBtn').textContent = 'Copied!';
+    setTimeout(() => { document.getElementById('copyLinkBtn').textContent = 'Copy OBS Link'; }, 2000);
+  });
+</script>
+</body>
 </html>
