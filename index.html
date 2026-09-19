@@ -52,63 +52,74 @@
             max-width: 500px;
             width: 100%;
             text-align: left;
-            max-height: 90vh;
+            max-height: 95vh;
             overflow-y: auto;
         }
 
-        .setup-container h2 { margin-bottom: 6px; }
-        .setup-container p { font-size: 13px; color: #b3b3b3; margin-bottom: 16px; }
+        .setup-container h2 { margin-bottom: 4px; }
+        .setup-container p { font-size: 12px; color: #b3b3b3; margin-bottom: 12px; }
 
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .setup-container label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             color: #b3b3b3;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             text-transform: uppercase;
         }
 
         .setup-container input, .setup-container select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 6px 8px;
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 6px;
             color: #fff;
-            font-size: 13px;
+            font-size: 12px;
         }
 
-        .row { display: flex; gap: 10px; }
+        .row { display: flex; gap: 8px; }
         .row .form-group { flex: 1; }
 
         .setup-container button {
             background: var(--accent-color);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 10px 16px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 12px;
+            margin-top: 8px;
             width: 100%;
+            font-size: 13px;
         }
 
         .obs-link-box {
-            margin-top: 16px;
-            padding: 12px;
+            margin-top: 12px;
+            padding: 10px;
             background: rgba(0, 0, 0, 0.6);
             border-radius: 8px;
             border: 1px dashed var(--accent-color);
         }
 
-        .obs-link-box p { font-size: 11px; margin-bottom: 6px; color: #fff; }
-        .obs-link-box input { font-size: 11px; padding: 6px; }
+        .obs-link-box p { font-size: 11px; margin-bottom: 4px; color: #fff; }
+        .obs-link-box input { font-size: 11px; padding: 5px; }
 
-        /* --- WIDGET STYLES --- */
+        .preview-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-top: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- WIDGET STYLES (Shared) --- */
         .widget-container {
             background: var(--bg-color);
             backdrop-filter: blur(12px);
@@ -117,15 +128,8 @@
             border: var(--border-width) solid var(--border-color);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             text-align: var(--text-align);
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.5s forwards;
             overflow: hidden;
             position: relative;
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Layout: Compact */
@@ -133,17 +137,17 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            padding: 16px;
-            max-width: 420px;
+            padding: 14px;
             width: 100%;
         }
 
         .widget-container.compact .album-art {
-            width: 75px;
-            height: 75px;
+            width: 65px;
+            height: 65px;
             border-radius: calc(var(--border-radius) - 4px);
             object-fit: cover;
             flex-shrink: 0;
+            background: #333;
         }
 
         .widget-container.compact .track-info {
@@ -156,11 +160,12 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            width: 320px;
-            height: 320px;
-            padding: 20px;
+            width: 100%;
+            height: 180px;
+            padding: 16px;
             background-size: cover;
             background-position: center;
+            background-color: #222;
         }
 
         .widget-container.full-art::before {
@@ -179,38 +184,38 @@
         .widget-container.full-art .album-art { display: none; }
 
         .track-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: var(--text-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .track-artist {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--secondary-text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .request-status {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--accent-color);
             font-style: italic;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: 4px;
-            min-height: 15px;
+            margin-top: 3px;
+            min-height: 14px;
         }
 
         .progress-bar {
             width: 100%;
-            height: 4px;
+            height: 3px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
             overflow: hidden;
@@ -219,8 +224,7 @@
         .progress-fill {
             height: 100%;
             background: var(--accent-color);
-            width: 0%;
-            transition: width 0.5s linear;
+            width: 45%;
         }
 
         .hidden { display: none !important; }
@@ -231,30 +235,30 @@
     <!-- Setup Screen (Configurator) -->
     <div id="setupScreen" class="setup-container hidden">
         <h2>Spotify Widget Studio</h2>
-        <p>Configure your styling parameters. Your OBS link updates automatically below.</p>
+        <p>Customize your styling below. Watch the live preview update instantly!</p>
         
         <div class="row">
             <div class="form-group">
                 <label>Spotify Client ID</label>
-                <input type="text" id="clientIdInput" placeholder="Client ID" oninput="updateObsLink()">
+                <input type="text" id="clientIdInput" placeholder="Client ID" oninput="applyStylesAndLink()">
             </div>
             <div class="form-group">
                 <label>Twitch Channel</label>
-                <input type="text" id="twitchChannelInput" placeholder="Channel name" oninput="updateObsLink()">
+                <input type="text" id="twitchChannelInput" placeholder="Channel name" oninput="applyStylesAndLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Layout Mode</label>
-                <select id="layoutModeInput" onchange="updateObsLink()">
+                <select id="layoutModeInput" onchange="applyStylesAndLink()">
                     <option value="compact">Compact (Side Art)</option>
                     <option value="full-art">Full Album Art Backdrop</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Text Alignment</label>
-                <select id="textAlignInput" onchange="updateObsLink()">
+                <select id="textAlignInput" onchange="applyStylesAndLink()">
                     <option value="left">Left</option>
                     <option value="center">Center</option>
                     <option value="right">Right</option>
@@ -265,40 +269,54 @@
         <div class="row">
             <div class="form-group">
                 <label>Border Radius</label>
-                <input type="text" id="borderRadiusInput" value="16px" oninput="updateObsLink()">
+                <input type="text" id="borderRadiusInput" value="16px" oninput="applyStylesAndLink()">
             </div>
             <div class="form-group">
                 <label>Border Width</label>
-                <input type="text" id="borderWidthInput" value="1px" oninput="updateObsLink()">
+                <input type="text" id="borderWidthInput" value="1px" oninput="applyStylesAndLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Border Color</label>
-                <input type="color" id="borderColorInput" value="#ffffff" oninput="updateObsLink()">
+                <input type="color" id="borderColorInput" value="#ffffff" oninput="applyStylesAndLink()">
             </div>
             <div class="form-group">
-                <label>Background Color</label>
-                <input type="text" id="bgColorInput" value="rgba(18, 18, 18, 0.75)" oninput="updateObsLink()">
+                <label>Background Color (CSS)</label>
+                <input type="text" id="bgColorInput" value="rgba(18, 18, 18, 0.75)" oninput="applyStylesAndLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Text Color</label>
-                <input type="color" id="textColorInput" value="#ffffff" oninput="updateObsLink()">
+                <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
             </div>
             <div class="form-group">
                 <label>Secondary Text Color</label>
-                <input type="color" id="secondaryColorInput" value="#b3b3b3" oninput="updateObsLink()">
+                <input type="color" id="secondaryColorInput" value="#b3b3b3" oninput="applyStylesAndLink()">
             </div>
         </div>
 
-        <button id="authBtn" onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
+        <div class="preview-label">Live Preview</div>
+        <!-- Configurator Live Preview Widget -->
+        <div id="previewWidget" class="widget-container compact">
+            <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
+            <div class="track-info">
+                <div class="track-title">Sample Song Title</div>
+                <div class="track-artist">Artist Name • Album Name</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="request-status">Requested by @Viewer123</div>
+            </div>
+        </div>
+
+        <button onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
 
         <div id="linkBox" class="obs-link-box hidden">
-            <p><strong>Copy this custom link into your OBS Browser Source:</strong></p>
+            <p><strong>Copy this updated link into your OBS Browser Source:</strong></p>
             <input type="text" id="obsGeneratedLink" readonly onclick="this.select()">
         </div>
     </div>
@@ -326,7 +344,7 @@
             if (isObsMode) {
                 document.body.classList.add('is-obs');
                 
-                // Apply Styles
+                // Apply Styles in OBS mode
                 const root = document.documentElement;
                 root.style.setProperty('--border-radius', urlParams.get('radius') || '16px');
                 root.style.setProperty('--border-width', urlParams.get('bwidth') || '1px');
@@ -374,12 +392,50 @@
             if (savedChannel) document.getElementById('twitchChannelInput').value = savedChannel;
 
             document.getElementById('setupScreen').classList.remove('hidden');
-            
-            // Generate link immediately if token exists
-            if (localStorage.getItem('sp_access_token')) {
-                updateObsLink();
-            }
+            applyStylesAndLink();
         };
+
+        function applyStylesAndLink() {
+            const radius = document.getElementById('borderRadiusInput').value || '16px';
+            const bwidth = document.getElementById('borderWidthInput').value || '1px';
+            const bcolor = document.getElementById('borderColorInput').value || '#ffffff';
+            const bgcolor = document.getElementById('bgColorInput').value || 'rgba(18, 18, 18, 0.75)';
+            const tcolor = document.getElementById('textColorInput').value || '#ffffff';
+            const stcolor = document.getElementById('secondaryColorInput').value || '#b3b3b3';
+            const align = document.getElementById('textAlignInput').value || 'left';
+            const layout = document.getElementById('layoutModeInput').value || 'compact';
+
+            // Apply live to preview box
+            const preview = document.getElementById('previewWidget');
+            preview.style.setProperty('--border-radius', radius);
+            preview.style.setProperty('--border-width', bwidth);
+            preview.style.setProperty('--border-color', hexToRGBA(bcolor, 0.2));
+            preview.style.setProperty('--bg-color', bgcolor);
+            preview.style.setProperty('--text-color', tcolor);
+            preview.style.setProperty('--secondary-text', stcolor);
+            preview.style.setProperty('--text-align', align);
+
+            preview.className = `widget-container ${layout}`;
+
+            if (layout === 'full-art') {
+                preview.style.backgroundImage = `url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&auto=format&fit=crop&q=80')`;
+            } else {
+                preview.style.backgroundImage = 'none';
+            }
+
+            // Update OBS Link if token exists
+            const token = localStorage.getItem('sp_access_token');
+            if (token) {
+                const rtoken = localStorage.getItem('sp_refresh_token') || '';
+                const cid = document.getElementById('clientIdInput').value.trim() || localStorage.getItem('sp_client_id') || '';
+                const ch = document.getElementById('twitchChannelInput').value.trim().toLowerCase() || localStorage.getItem('twitch_channel') || '';
+
+                const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid)}&ch=${encodeURIComponent(ch)}`;
+                
+                document.getElementById('obsGeneratedLink').value = obsUrl;
+                document.getElementById('linkBox').classList.remove('hidden');
+            }
+        }
 
         function saveSettingsAndAuth() {
             const cid = document.getElementById('clientIdInput').value.trim();
@@ -430,29 +486,6 @@
                 localStorage.setItem('sp_access_token', data.access_token);
                 if (data.refresh_token) localStorage.setItem('sp_refresh_token', data.refresh_token);
             }
-        }
-
-        function updateObsLink() {
-            const token = localStorage.getItem('sp_access_token');
-            if (!token) return; // Don't show link if not authenticated yet
-
-            const layout = document.getElementById('layoutModeInput').value;
-            const align = document.getElementById('textAlignInput').value;
-            const radius = document.getElementById('borderRadiusInput').value;
-            const bwidth = document.getElementById('borderWidthInput').value;
-            const bcolor = document.getElementById('borderColorInput').value;
-            const bgcolor = document.getElementById('bgColorInput').value;
-            const tcolor = document.getElementById('textColorInput').value;
-            const stcolor = document.getElementById('secondaryColorInput').value;
-
-            const rtoken = localStorage.getItem('sp_refresh_token') || '';
-            const cid = document.getElementById('clientIdInput').value.trim() || localStorage.getItem('sp_client_id') || '';
-            const ch = document.getElementById('twitchChannelInput').value.trim().toLowerCase() || localStorage.getItem('twitch_channel') || '';
-
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid)}&ch=${encodeURIComponent(ch)}`;
-            
-            document.getElementById('obsGeneratedLink').value = obsUrl;
-            document.getElementById('linkBox').classList.remove('hidden');
         }
 
         async function refreshAccessToken() {
