@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Spotify & Twitch Request Widget</title>
+    <title>Advanced OBS Spotify & Twitch Widget</title>
     <style>
         :root {
             --bg-color: rgba(18, 18, 18, 0.75);
             --text-color: #ffffff;
-            --accent-color: #1db954;
             --secondary-text: #b3b3b3;
+            --accent-color: #1db954;
+            --border-radius: 16px;
+            --border-width: 1px;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-align: left;
+            --layout-mode: compact; /* compact or full-art */
         }
 
         * {
@@ -26,53 +31,60 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             padding: 20px;
-            overflow: hidden;
         }
 
         body.is-obs {
             background: transparent;
             justify-content: flex-end;
             align-items: flex-start;
-        }
-
-        .setup-container, .widget-container {
-            background: var(--bg-color);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 100vh;
+            overflow: hidden;
         }
 
         .setup-container {
-            max-width: 450px;
+            background: rgba(24, 24, 27, 0.9);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 500px;
             width: 100%;
             text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
-        .setup-container h2 { margin-bottom: 8px; }
-        .setup-container p { font-size: 13px; color: var(--secondary-text); margin-bottom: 16px; }
+        .setup-container h2 { margin-bottom: 6px; }
+        .setup-container p { font-size: 13px; color: #b3b3b3; margin-bottom: 16px; }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
 
         .setup-container label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            color: var(--secondary-text);
+            color: #b3b3b3;
             display: block;
-            margin-top: 10px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
         }
 
-        .setup-container input {
+        .setup-container input, .setup-container select {
             width: 100%;
-            padding: 10px;
-            margin-top: 4px;
+            padding: 8px 10px;
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
+            border-radius: 6px;
             color: #fff;
+            font-size: 13px;
         }
+
+        .row { display: flex; gap: 10px; }
+        .row .form-group { flex: 1; }
 
         .setup-container button {
             background: var(--accent-color);
@@ -82,7 +94,7 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 16px;
+            margin-top: 12px;
             width: 100%;
         }
 
@@ -97,43 +109,80 @@
         .obs-link-box p { font-size: 11px; margin-bottom: 6px; color: #fff; }
         .obs-link-box input { font-size: 11px; padding: 6px; }
 
+        /* --- WIDGET STYLES (Controlled via URL variables) --- */
         .widget-container {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            max-width: 420px;
-            width: 100%;
+            background: var(--bg-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: var(--border-radius);
+            border: var(--border-width) solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            text-align: var(--text-align);
             opacity: 0;
             transform: translateY(20px);
             animation: fadeIn 0.5s forwards;
+            overflow: hidden;
+            position: relative;
         }
 
         @keyframes fadeIn {
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .album-art-wrapper {
-            position: relative;
+        /* Layout: Compact */
+        .widget-container.compact {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .widget-container.compact .album-art {
+            width: 75px;
+            height: 75px;
+            border-radius: calc(var(--border-radius) - 4px);
+            object-fit: cover;
             flex-shrink: 0;
         }
 
-        .album-art {
-            width: 80px;
-            height: 80px;
-            border-radius: 12px;
-            object-fit: cover;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-            display: block;
-        }
-
-        .track-info {
+        .widget-container.compact .track-info {
             flex-grow: 1;
             overflow: hidden;
         }
 
+        /* Layout: Full Album Art Backdrop */
+        .widget-container.full-art {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            width: 320px;
+            height: 320px;
+            padding: 20px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .widget-container.full-art::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.2) 100%);
+            z-index: 1;
+        }
+
+        .widget-container.full-art .track-info {
+            position: relative;
+            z-index: 2;
+        }
+
+        .widget-container.full-art .album-art { display: none; }
+
         .track-title {
             font-size: 16px;
             font-weight: 700;
+            color: var(--text-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -163,7 +212,7 @@
         .progress-bar {
             width: 100%;
             height: 4px;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
             overflow: hidden;
         }
@@ -182,28 +231,82 @@
 
     <!-- Setup Screen (Configurator) -->
     <div id="setupScreen" class="setup-container hidden">
-        <h2>Spotify OBS Widget</h2>
-        <p>Authorize your Spotify account and generate your custom OBS overlay link.</p>
+        <h2>Spotify Widget Studio</h2>
+        <p>Configure your styling parameters and generate your custom OBS overlay link.</p>
         
-        <label>Spotify Client ID</label>
-        <input type="text" id="clientIdInput" placeholder="e.g. 8f4c93...abc">
-        
-        <label>Twitch Channel Name</label>
-        <input type="text" id="twitchChannelInput" placeholder="e.g. your_twitch_name">
-        
-        <button onclick="saveSettingsAndAuth()">Authorize & Generate Link</button>
+        <div class="row">
+            <div class="form-group">
+                <label>Spotify Client ID</label>
+                <input type="text" id="clientIdInput" placeholder="Client ID">
+            </div>
+            <div class="form-group">
+                <label>Twitch Channel</label>
+                <input type="text" id="twitchChannelInput" placeholder="Channel name">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Layout Mode</label>
+                <select id="layoutModeInput">
+                    <option value="compact">Compact (Side Art)</option>
+                    <option value="full-art">Full Album Art Backdrop</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Text Alignment</label>
+                <select id="textAlignInput">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Border Radius</label>
+                <input type="text" id="borderRadiusInput" value="16px">
+            </div>
+            <div class="form-group">
+                <label>Border Width</label>
+                <input type="text" id="borderWidthInput" value="1px">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Border Color</label>
+                <input type="color" id="borderColorInput" value="#ffffff">
+            </div>
+            <div class="form-group">
+                <label>Background Color</label>
+                <input type="text" id="bgColorInput" value="rgba(18, 18, 18, 0.75)">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Text Color</label>
+                <input type="color" id="textColorInput" value="#ffffff">
+            </div>
+            <div class="form-group">
+                <label>Secondary Text Color</label>
+                <input type="color" id="secondaryColorInput" value="#b3b3b3">
+            </div>
+        </div>
+
+        <button onclick="saveSettingsAndAuth()">Authorize & Generate OBS Link</button>
 
         <div id="linkBox" class="obs-link-box hidden">
-            <p><strong>Success! Copy this link into your OBS Browser Source:</strong></p>
+            <p><strong>Copy this custom link into your OBS Browser Source:</strong></p>
             <input type="text" id="obsGeneratedLink" readonly onclick="this.select()">
         </div>
     </div>
 
     <!-- Live OBS Widget UI -->
     <div id="widgetScreen" class="widget-container hidden">
-        <div class="album-art-wrapper">
-            <img id="albumArt" class="album-art" src="" alt="Album Art">
-        </div>
+        <img id="albumArt" class="album-art" src="" alt="Album Art">
         <div class="track-info">
             <div id="trackTitle" class="track-title">Not Playing</div>
             <div id="trackArtist" class="track-artist">Open Spotify to start</div>
@@ -216,22 +319,36 @@
 
     <script>
         const BASE_URL = window.location.href.split('?')[0].split('#')[0];
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const isObsMode = params.get('obs') === 'true';
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const isObsMode = urlParams.get('obs') === 'true';
 
         window.onload = async () => {
             if (isObsMode) {
                 document.body.classList.add('is-obs');
-                document.getElementById('widgetScreen').classList.remove('hidden');
                 
+                // Apply Custom Styles from URL Parameters
+                const root = document.documentElement;
+                root.style.setProperty('--border-radius', urlParams.get('radius') || '16px');
+                root.style.setProperty('--border-width', urlParams.get('bwidth') || '1px');
+                root.style.setProperty('--border-color', hexToRGBA(urlParams.get('bcolor') || '#ffffff', 0.2));
+                root.style.setProperty('--bg-color', urlParams.get('bgcolor') || 'rgba(18, 18, 18, 0.75)');
+                root.style.setProperty('--text-color', urlParams.get('tcolor') || '#ffffff');
+                root.style.setProperty('--secondary-text', urlParams.get('stcolor') || '#b3b3b3');
+                root.style.setProperty('--text-align', urlParams.get('align') || 'left');
+
+                const layout = urlParams.get('layout') || 'compact';
+                const widgetEl = document.getElementById('widgetScreen');
+                widgetEl.classList.add(layout);
+                widgetEl.classList.remove('hidden');
+
                 const token = localStorage.getItem('sp_access_token');
                 if (!token) {
-                    document.getElementById('trackTitle').innerText = "Authentication Required";
-                    document.getElementById('trackArtist').innerText = "Open configuration link in browser first";
+                    document.getElementById('trackTitle').innerText = "Auth Required";
+                    document.getElementById('trackArtist').innerText = "Open configuration page first";
                     return;
                 }
-                
+
                 startPlayerPolling();
                 connectTwitchChat();
                 return;
@@ -256,7 +373,7 @@
         function saveSettingsAndAuth() {
             const cid = document.getElementById('clientIdInput').value.trim();
             const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase();
-            if (!cid || !channel) return alert('Please fill in both fields.');
+            if (!cid || !channel) return alert('Please fill in your Client ID and Twitch channel.');
             
             localStorage.setItem('sp_client_id', cid);
             localStorage.setItem('twitch_channel', channel);
@@ -306,9 +423,20 @@
 
         function showObsLinkGenerator() {
             document.getElementById('setupScreen').classList.remove('hidden');
-            const obsUrl = `${BASE_URL}?obs=true`;
-            const inputField = document.getElementById('obsGeneratedLink');
-            inputField.value = obsUrl;
+            
+            // Gather styling parameters
+            const layout = document.getElementById('layoutModeInput').value;
+            const align = document.getElementById('textAlignInput').value;
+            const radius = document.getElementById('borderRadiusInput').value;
+            const bwidth = document.getElementById('borderWidthInput').value;
+            const bcolor = document.getElementById('borderColorInput').value;
+            const bgcolor = document.getElementById('bgColorInput').value;
+            const tcolor = document.getElementById('textColorInput').value;
+            const stcolor = document.getElementById('secondaryColorInput').value;
+
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}`;
+            
+            document.getElementById('obsGeneratedLink').value = obsUrl;
             document.getElementById('linkBox').classList.remove('hidden');
         }
 
@@ -356,6 +484,11 @@
                     const imageUrl = data.item.album.images.length > 0 ? data.item.album.images[0].url : '';
                     const artEl = document.getElementById('albumArt');
                     if (artEl.src !== imageUrl) artEl.src = imageUrl;
+
+                    const layout = urlParams.get('layout') || 'compact';
+                    if (layout === 'full-art' && imageUrl) {
+                        document.getElementById('widgetScreen').style.backgroundImage = `url('${imageUrl}')`;
+                    }
                     
                     let progress = (data.progress_ms / data.item.duration_ms) * 100;
                     document.getElementById('progressFill').style.width = `${progress}%`;
@@ -380,7 +513,6 @@
                         const user = match[1];
                         const message = match[2].trim();
 
-                        // Supports both !sr and !request commands
                         let query = null;
                         if (message.startsWith('!sr ')) {
                             query = message.substring(4).trim();
@@ -409,10 +541,10 @@
             let searchData = await searchRes.json();
             
             if (searchData.tracks && searchData.tracks.items.length > 0) {
-                let trackUri = searchData.tracks.items[0].uri;
+                let trackUri = searchData.tracks.items[0].url || searchData.tracks.items[0].uri;
                 let trackName = searchData.tracks.items[0].name;
 
-                let queueRes = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(trackUri)}`, {
+                let queueRes = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(searchData.tracks.items[0].uri)}`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -427,10 +559,19 @@
 
         function showRequestStatus(text) {
             const statusEl = document.getElementById('requestStatus');
+            if (!statusEl) return;
             statusEl.innerText = text;
             setTimeout(() => {
                 if (statusEl.innerText === text) statusEl.innerText = '';
             }, 6000);
+        }
+
+        function hexToRGBA(hex, alpha) {
+            if (!hex.startsWith('#')) return hex;
+            let r = parseInt(hex.slice(1, 3), 16),
+                g = parseInt(hex.slice(3, 5), 16),
+                b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
         function generateRandomString(length) {
