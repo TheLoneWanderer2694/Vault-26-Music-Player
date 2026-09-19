@@ -72,7 +72,9 @@
             text-transform: uppercase;
         }
 
-        .setup-container input, .setup-container select {
+        .setup-container input[type="text"], 
+        .setup-container input[type="range"], 
+        .setup-container select {
             width: 100%;
             padding: 6px 8px;
             background: rgba(0, 0, 0, 0.5);
@@ -80,6 +82,26 @@
             border-radius: 6px;
             color: #fff;
             font-size: 12px;
+        }
+
+        .setup-container input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+
+        .setup-container input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .setup-container input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
         }
 
         .row { display: flex; gap: 8px; }
@@ -367,23 +389,27 @@
                 <input type="color" id="borderColorInput" value="#ffffff" oninput="applyStylesAndLink()">
             </div>
             <div class="form-group">
-                <label>Background Color (CSS)</label>
-                <input type="text" id="bgColorInput" value="rgba(18, 18, 18, 0.75)" oninput="applyStylesAndLink()">
+                <label>Background Color Picker</label>
+                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
             </div>
         </div>
 
         <div class="row">
+            <div class="form-group">
+                <label>Background Opacity (<span id="opacityVal">75</span>%)</label>
+                <input type="range" id="bgOpacityInput" min="0" max="100" value="75" oninput="applyStylesAndLink()">
+            </div>
             <div class="form-group">
                 <label>Text Color</label>
                 <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Secondary Text Color</label>
                 <input type="color" id="secondaryColorInput" value="#b3b3b3" oninput="applyStylesAndLink()">
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Show Progress Bar?</label>
                 <select id="showProgressInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
@@ -391,7 +417,10 @@
                     <option value="no">Hidden</option>
                 </select>
             </div>
-            <div class="form-group">
+        </div>
+
+        <div class="row">
+            <div class="form-group" style="flex: 1;">
                 <label>Auto-Hide When Paused?</label>
                 <select id="autoHideInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
                     <option value="yes">Hide After 5s Inactive</option>
@@ -513,7 +542,12 @@
             const radius = document.getElementById('borderRadiusInput').value || '16px';
             const bwidth = document.getElementById('borderWidthInput').value || '1px';
             const bcolor = document.getElementById('borderColorInput').value || '#ffffff';
-            const bgcolor = document.getElementById('bgColorInput').value || 'rgba(18, 18, 18, 0.75)';
+            
+            const bgColorHex = document.getElementById('bgColorPicker').value || '#121212';
+            const bgOpacity = document.getElementById('bgOpacityInput').value;
+            document.getElementById('opacityVal').innerText = bgOpacity;
+            const bgcolor = hexToRGBA(bgColorHex, bgOpacity / 100);
+
             const tcolor = document.getElementById('textColorInput').value || '#ffffff';
             const stcolor = document.getElementById('secondaryColorInput').value || '#b3b3b3';
             const align = document.getElementById('textAlignInput').value || 'left';
@@ -675,18 +709,16 @@
                 const widgetEl = document.getElementById('widgetScreen');
 
                 if (res.status === 204 || res.status > 300) {
-                    // Nothing playing or paused
                     if (autoHideEnabled && !hideTimer) {
                         hideTimer = setTimeout(() => {
                             widgetEl.classList.add('transparent-obs');
-                        }, 5000); // 5 seconds delay before fading out
+                        }, 5000);
                     }
                     return;
                 }
 
                 let data = await res.json();
                 if (data && data.item) {
-                    // Music is active/playing -> cancel any pending hide timer and show widget
                     if (hideTimer) {
                         clearTimeout(hideTimer);
                         hideTimer = null;
