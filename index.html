@@ -313,7 +313,7 @@
             </div>
         </div>
 
-        <button onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
+        <button type="button" onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
 
         <div id="linkBox" class="obs-link-box hidden">
             <p><strong>Copy this updated link into your OBS Browser Source:</strong></p>
@@ -405,6 +405,12 @@
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
 
+            // Save input state immediately so it won't clear
+            const cid = document.getElementById('clientIdInput').value.trim();
+            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase();
+            if (cid) localStorage.setItem('sp_client_id', cid);
+            if (channel) localStorage.setItem('twitch_channel', channel);
+
             // Apply live to preview box
             const preview = document.getElementById('previewWidget');
             preview.style.setProperty('--border-radius', radius);
@@ -427,35 +433,28 @@
             const token = localStorage.getItem('sp_access_token');
             if (token) {
                 const rtoken = localStorage.getItem('sp_refresh_token') || '';
-                const cid = document.getElementById('clientIdInput').value.trim() || localStorage.getItem('sp_client_id') || '';
-                const ch = document.getElementById('twitchChannelInput').value.trim().toLowerCase() || localStorage.getItem('twitch_channel') || '';
-
-                const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid)}&ch=${encodeURIComponent(ch)}`;
+                const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || localStorage.getItem('sp_client_id') || '')}&ch=${encodeURIComponent(channel || localStorage.getItem('twitch_channel') || '')}`;
                 
                 document.getElementById('obsGeneratedLink').value = obsUrl;
                 document.getElementById('linkBox').classList.remove('hidden');
             }
         }
 
-        function saveSettingsAndAuth() {
+        async function saveSettingsAndAuth() {
             const cid = document.getElementById('clientIdInput').value.trim();
             const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase();
             if (!cid || !channel) return alert('Please fill in your Client ID and Twitch channel.');
             
             localStorage.setItem('sp_client_id', cid);
             localStorage.setItem('twitch_channel', channel);
-            redirectToAuth();
-        }
-
-        async function redirectToAuth() {
-            const clientId = document.getElementById('clientIdInput').value.trim();
+            
             const verifier = generateRandomString(64);
             localStorage.setItem('sp_verifier', verifier);
             const challenge = await sha256(verifier);
 
             const scope = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
             const authUrl = new URL('https://accounts.spotify.com/authorize');
-            authUrl.searchParams.append('client_id', clientId);
+            authUrl.searchParams.append('client_id', cid);
             authUrl.searchParams.append('response_type', 'code');
             authUrl.searchParams.append('redirect_uri', BASE_URL);
             authUrl.searchParams.append('code_challenge_method', 'S256');
