@@ -157,12 +157,14 @@
             overflow: hidden;
             position: relative;
             opacity: 1;
-            transition: opacity 0.5s ease-in-out;
+            visibility: visible;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
         }
 
         .widget-container.transparent-obs {
-            opacity: 0;
-            pointer-events: none;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
 
         /* Layout: Compact */
@@ -281,6 +283,122 @@
 
         .widget-container.pill .progress-bar { display: none; }
 
+        /* --- NEW LAYOUT 1: Vinyl Record Spinner --- */
+        .widget-container.vinyl {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 18px;
+            width: 100%;
+            border-radius: 50px;
+        }
+
+        .widget-container.vinyl .vinyl-sleeve {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .widget-container.vinyl .album-art {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: absolute;
+            top: 2.5px;
+            left: 2.5px;
+            z-index: 2;
+            animation: spinVinyl 6s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .widget-container.vinyl.is-playing .album-art {
+            animation-play-state: running;
+        }
+
+        .widget-container.vinyl .vinyl-record-grooves {
+            width: 60px;
+            height: 60px;
+            background: repeating-radial-gradient(#111, #111 3px, #222 4px, #111 5px);
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .widget-container.vinyl .track-info {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        @keyframes spinVinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- NEW LAYOUT 2: Glassmorphism Card --- */
+        .widget-container.glass-card {
+            display: flex;
+            flex-direction: column;
+            padding: 18px;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .widget-container.glass-card .album-art {
+            width: 100%;
+            height: 140px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin-bottom: 12px;
+        }
+
+        .widget-container.glass-card .track-info {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* --- NEW LAYOUT 3: Bottom Ticker / Stream Banner --- */
+        .widget-container.ticker {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 24px;
+            width: 100vw;
+            max-width: 100%;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .widget-container.ticker .album-art {
+            width: 42px;
+            height: 42px;
+            border-radius: 6px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .widget-container.ticker .track-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .widget-container.ticker .track-title-wrapper { width: auto; }
+        .widget-container.ticker .track-artist-wrapper { width: auto; margin-bottom: 0; }
+        .widget-container.ticker .progress-bar { display: none; }
+        .widget-container.ticker .request-status { margin-top: 0; margin-left: auto; }
+
         /* Typography */
         .track-title-wrapper, .track-artist-wrapper {
             width: 100%;
@@ -360,6 +478,9 @@
                     <option value="stacked">Stacked / Vertical</option>
                     <option value="minimalist">Minimalist (Text Only)</option>
                     <option value="pill">HUD / Floating Pill</option>
+                    <option value="vinyl">Vinyl Record Spinner 💿</option>
+                    <option value="glass-card">Glassmorphism Card 🧊</option>
+                    <option value="ticker">Bottom Stream Ticker 📜</option>
                 </select>
             </div>
             <div class="form-group">
@@ -433,6 +554,10 @@
         
         <!-- Configurator Live Preview Widget -->
         <div id="previewWidget" class="widget-container compact">
+            <div id="previewVinylContainer" class="vinyl-sleeve hidden">
+                <div class="vinyl-record-grooves"></div>
+                <img id="previewVinylArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
+            </div>
             <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
             <div class="track-info">
                 <div class="track-title-wrapper"><div id="previewTitle" class="track-title">Sample Song Title</div></div>
@@ -460,6 +585,10 @@
 
     <!-- Live OBS Widget UI -->
     <div id="widgetScreen" class="widget-container hidden">
+        <div id="liveVinylContainer" class="vinyl-sleeve hidden">
+            <div class="vinyl-record-grooves"></div>
+            <img id="liveVinylArt" class="album-art" src="" alt="Album Art">
+        </div>
         <img id="albumArt" class="album-art" src="" alt="Album Art">
         <div class="track-info">
             <div class="track-title-wrapper"><div id="trackTitle" class="track-title">Not Playing</div></div>
@@ -501,6 +630,11 @@
                 const widgetEl = document.getElementById('widgetScreen');
                 widgetEl.classList.add(layout);
                 widgetEl.classList.remove('hidden');
+
+                if (layout === 'vinyl') {
+                    document.getElementById('liveVinylContainer').classList.remove('hidden');
+                    document.getElementById('albumArt').classList.add('hidden');
+                }
 
                 const token = urlParams.get('token');
                 const refreshToken = urlParams.get('rtoken');
@@ -573,8 +707,21 @@
 
             preview.className = `widget-container ${layout}`;
 
+            const vinylContainer = document.getElementById('previewVinylContainer');
+            const standardArt = document.getElementById('previewAlbumArt');
+
+            if (layout === 'vinyl') {
+                vinylContainer.classList.remove('hidden');
+                standardArt.classList.add('hidden');
+                preview.classList.add('is-playing');
+            } else {
+                vinylContainer.classList.add('hidden');
+                standardArt.classList.remove('hidden');
+                preview.classList.remove('is-playing');
+            }
+
             const progBar = document.getElementById('previewProgressBar');
-            if (prog === 'no') {
+            if (prog === 'no' || layout === 'ticker') {
                 progBar.classList.add('hidden');
             } else {
                 progBar.classList.remove('hidden');
@@ -598,6 +745,7 @@
         function testSimulatePlaying() {
             const preview = document.getElementById('previewWidget');
             preview.classList.remove('transparent-obs');
+            preview.classList.add('is-playing');
             document.getElementById('previewTitle').innerText = "Blinding Lights";
             document.getElementById('previewArtist').innerText = "The Weeknd • After Hours";
             document.getElementById('previewStatus').innerText = "Playing Live in Studio";
@@ -605,6 +753,7 @@
 
         function testSimulatePaused() {
             const preview = document.getElementById('previewWidget');
+            preview.classList.remove('is-playing');
             document.getElementById('previewTitle').innerText = "Playback Paused / Inactive";
             document.getElementById('previewArtist').innerText = "Hiding in 5 seconds...";
             document.getElementById('previewStatus').innerText = "";
@@ -694,6 +843,7 @@
 
         function startPlayerPolling() {
             const autoHideEnabled = urlParams.get('autohide') !== 'no';
+            const layout = urlParams.get('layout') || 'compact';
 
             setInterval(async () => {
                 let token = localStorage.getItem('sp_access_token');
@@ -709,6 +859,7 @@
                 const widgetEl = document.getElementById('widgetScreen');
 
                 if (res.status === 204 || res.status > 300) {
+                    widgetEl.classList.remove('is-playing');
                     if (autoHideEnabled && !hideTimer) {
                         hideTimer = setTimeout(() => {
                             widgetEl.classList.add('transparent-obs');
@@ -724,15 +875,21 @@
                         hideTimer = null;
                     }
                     widgetEl.classList.remove('transparent-obs');
+                    widgetEl.classList.add('is-playing');
 
                     document.getElementById('trackTitle').innerText = data.item.name;
                     document.getElementById('trackArtist').innerText = data.item.artists.map(a => a.name).join(', ');
                     
                     const imageUrl = data.item.album.images.length > 0 ? data.item.album.images[0].url : '';
-                    const artEl = document.getElementById('albumArt');
-                    if (artEl.src !== imageUrl) artEl.src = imageUrl;
+                    
+                    if (layout === 'vinyl') {
+                        const vinylArt = document.getElementById('liveVinylArt');
+                        if (vinylArt.src !== imageUrl) vinylArt.src = imageUrl;
+                    } else {
+                        const artEl = document.getElementById('albumArt');
+                        if (artEl.src !== imageUrl) artEl.src = imageUrl;
+                    }
 
-                    const layout = urlParams.get('layout') || 'compact';
                     if (layout === 'full-art' && imageUrl) {
                         widgetEl.style.backgroundImage = `url('${imageUrl}')`;
                     }
