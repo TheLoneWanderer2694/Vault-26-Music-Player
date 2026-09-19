@@ -31,7 +31,6 @@
             overflow: hidden;
         }
 
-        /* Transparent background when loaded as an OBS overlay */
         body.is-obs {
             background: transparent;
             justify-content: flex-end;
@@ -102,7 +101,8 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            max-width: 450px;
+            max-width: 420px;
+            width: 100%;
             opacity: 0;
             transform: translateY(20px);
             animation: fadeIn 0.5s forwards;
@@ -112,12 +112,18 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .album-art-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
         .album-art {
-            width: 70px;
-            height: 70px;
-            border-radius: 10px;
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
             object-fit: cover;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            display: block;
         }
 
         .track-info {
@@ -150,6 +156,8 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-top: 4px;
+            min-height: 15px;
         }
 
         .progress-bar {
@@ -193,7 +201,9 @@
 
     <!-- Live OBS Widget UI -->
     <div id="widgetScreen" class="widget-container hidden">
-        <img id="albumArt" class="album-art" src="" alt="Album Art">
+        <div class="album-art-wrapper">
+            <img id="albumArt" class="album-art" src="" alt="Album Art">
+        </div>
         <div class="track-info">
             <div id="trackTitle" class="track-title">Not Playing</div>
             <div id="trackArtist" class="track-artist">Open Spotify to start</div>
@@ -215,7 +225,6 @@
                 document.body.classList.add('is-obs');
                 document.getElementById('widgetScreen').classList.remove('hidden');
                 
-                // Read stored tokens specific to this mode
                 const token = localStorage.getItem('sp_access_token');
                 if (!token) {
                     document.getElementById('trackTitle').innerText = "Authentication Required";
@@ -228,15 +237,11 @@
                 return;
             }
 
-            // Normal browser setup mode
             if (code) {
                 await exchangeCodeForToken(code);
                 window.history.replaceState({}, document.title, BASE_URL);
-                
-                // After successful auth, automatically show the OBS link
                 showObsLinkGenerator();
             } else {
-                // Check if we already have saved settings
                 const savedClientId = localStorage.getItem('sp_client_id');
                 const savedChannel = localStorage.getItem('twitch_channel');
                 if (savedClientId && localStorage.getItem('sp_access_token')) {
@@ -347,7 +352,10 @@
                 if (data && data.item) {
                     document.getElementById('trackTitle').innerText = data.item.name;
                     document.getElementById('trackArtist').innerText = data.item.artists.map(a => a.name).join(', ');
-                    document.getElementById('albumArt').src = data.item.album.images[0].url;
+                    
+                    const imageUrl = data.item.album.images.length > 0 ? data.item.album.images[0].url : '';
+                    const artEl = document.getElementById('albumArt');
+                    if (artEl.src !== imageUrl) artEl.src = imageUrl;
                     
                     let progress = (data.progress_ms / data.item.duration_ms) * 100;
                     document.getElementById('progressFill').style.width = `${progress}%`;
@@ -372,8 +380,15 @@
                         const user = match[1];
                         const message = match[2].trim();
 
+                        // Supports both !sr and !request commands
+                        let query = null;
                         if (message.startsWith('!sr ')) {
-                            const query = message.substring(4).trim();
+                            query = message.substring(4).trim();
+                        } else if (message.startsWith('!request ')) {
+                            query = message.substring(9).trim();
+                        }
+
+                        if (query) {
                             showRequestStatus(`Requested by @${user}`);
                             await searchAndQueueSong(query);
                         }
