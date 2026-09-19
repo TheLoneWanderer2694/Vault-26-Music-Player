@@ -231,30 +231,30 @@
     <!-- Setup Screen (Configurator) -->
     <div id="setupScreen" class="setup-container hidden">
         <h2>Spotify Widget Studio</h2>
-        <p>Configure your styling parameters and generate your custom OBS overlay link.</p>
+        <p>Configure your styling parameters. Your OBS link updates automatically below.</p>
         
         <div class="row">
             <div class="form-group">
                 <label>Spotify Client ID</label>
-                <input type="text" id="clientIdInput" placeholder="Client ID">
+                <input type="text" id="clientIdInput" placeholder="Client ID" oninput="updateObsLink()">
             </div>
             <div class="form-group">
                 <label>Twitch Channel</label>
-                <input type="text" id="twitchChannelInput" placeholder="Channel name">
+                <input type="text" id="twitchChannelInput" placeholder="Channel name" oninput="updateObsLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Layout Mode</label>
-                <select id="layoutModeInput">
+                <select id="layoutModeInput" onchange="updateObsLink()">
                     <option value="compact">Compact (Side Art)</option>
                     <option value="full-art">Full Album Art Backdrop</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Text Alignment</label>
-                <select id="textAlignInput">
+                <select id="textAlignInput" onchange="updateObsLink()">
                     <option value="left">Left</option>
                     <option value="center">Center</option>
                     <option value="right">Right</option>
@@ -265,37 +265,37 @@
         <div class="row">
             <div class="form-group">
                 <label>Border Radius</label>
-                <input type="text" id="borderRadiusInput" value="16px">
+                <input type="text" id="borderRadiusInput" value="16px" oninput="updateObsLink()">
             </div>
             <div class="form-group">
                 <label>Border Width</label>
-                <input type="text" id="borderWidthInput" value="1px">
+                <input type="text" id="borderWidthInput" value="1px" oninput="updateObsLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Border Color</label>
-                <input type="color" id="borderColorInput" value="#ffffff">
+                <input type="color" id="borderColorInput" value="#ffffff" oninput="updateObsLink()">
             </div>
             <div class="form-group">
                 <label>Background Color</label>
-                <input type="text" id="bgColorInput" value="rgba(18, 18, 18, 0.75)">
+                <input type="text" id="bgColorInput" value="rgba(18, 18, 18, 0.75)" oninput="updateObsLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Text Color</label>
-                <input type="color" id="textColorInput" value="#ffffff">
+                <input type="color" id="textColorInput" value="#ffffff" oninput="updateObsLink()">
             </div>
             <div class="form-group">
                 <label>Secondary Text Color</label>
-                <input type="color" id="secondaryColorInput" value="#b3b3b3">
+                <input type="color" id="secondaryColorInput" value="#b3b3b3" oninput="updateObsLink()">
             </div>
         </div>
 
-        <button onclick="saveSettingsAndAuth()">Authorize & Generate OBS Link</button>
+        <button id="authBtn" onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
 
         <div id="linkBox" class="obs-link-box hidden">
             <p><strong>Copy this custom link into your OBS Browser Source:</strong></p>
@@ -341,7 +341,6 @@
                 widgetEl.classList.add(layout);
                 widgetEl.classList.remove('hidden');
 
-                // Extract tokens passed directly via URL parameters
                 const token = urlParams.get('token');
                 const refreshToken = urlParams.get('rtoken');
                 const clientId = urlParams.get('cid');
@@ -353,7 +352,6 @@
                     return;
                 }
 
-                // Store them locally for runtime session usage
                 localStorage.setItem('sp_access_token', token);
                 localStorage.setItem('sp_refresh_token', refreshToken);
                 localStorage.setItem('sp_client_id', clientId);
@@ -367,16 +365,19 @@
             if (code) {
                 await exchangeCodeForToken(code);
                 window.history.replaceState({}, document.title, BASE_URL);
-                showObsLinkGenerator();
-            } else {
-                const savedClientId = localStorage.getItem('sp_client_id');
-                const savedChannel = localStorage.getItem('twitch_channel');
-                if (savedClientId && localStorage.getItem('sp_access_token')) {
-                    document.getElementById('clientIdInput').value = savedClientId;
-                    document.getElementById('twitchChannelInput').value = savedChannel || '';
-                    showObsLinkGenerator();
-                }
-                document.getElementById('setupScreen').classList.remove('hidden');
+            }
+
+            // Load saved settings into inputs if available
+            const savedClientId = localStorage.getItem('sp_client_id');
+            const savedChannel = localStorage.getItem('twitch_channel');
+            if (savedClientId) document.getElementById('clientIdInput').value = savedClientId;
+            if (savedChannel) document.getElementById('twitchChannelInput').value = savedChannel;
+
+            document.getElementById('setupScreen').classList.remove('hidden');
+            
+            // Generate link immediately if token exists
+            if (localStorage.getItem('sp_access_token')) {
+                updateObsLink();
             }
         };
 
@@ -391,7 +392,7 @@
         }
 
         async function redirectToAuth() {
-            const clientId = localStorage.getItem('sp_client_id');
+            const clientId = document.getElementById('clientIdInput').value.trim();
             const verifier = generateRandomString(64);
             localStorage.setItem('sp_verifier', verifier);
             const challenge = await sha256(verifier);
@@ -431,9 +432,10 @@
             }
         }
 
-        function showObsLinkGenerator() {
-            document.getElementById('setupScreen').classList.remove('hidden');
-            
+        function updateObsLink() {
+            const token = localStorage.getItem('sp_access_token');
+            if (!token) return; // Don't show link if not authenticated yet
+
             const layout = document.getElementById('layoutModeInput').value;
             const align = document.getElementById('textAlignInput').value;
             const radius = document.getElementById('borderRadiusInput').value;
@@ -443,10 +445,9 @@
             const tcolor = document.getElementById('textColorInput').value;
             const stcolor = document.getElementById('secondaryColorInput').value;
 
-            const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
-            const cid = localStorage.getItem('sp_client_id') || '';
-            const ch = localStorage.getItem('twitch_channel') || '';
+            const cid = document.getElementById('clientIdInput').value.trim() || localStorage.getItem('sp_client_id') || '';
+            const ch = document.getElementById('twitchChannelInput').value.trim().toLowerCase() || localStorage.getItem('twitch_channel') || '';
 
             const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid)}&ch=${encodeURIComponent(ch)}`;
             
