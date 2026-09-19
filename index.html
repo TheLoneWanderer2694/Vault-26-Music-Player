@@ -14,7 +14,6 @@
             --border-width: 1px;
             --border-color: rgba(255, 255, 255, 0.1);
             --text-align: left;
-            --layout-mode: compact; /* compact or full-art */
         }
 
         * {
@@ -109,7 +108,7 @@
         .obs-link-box p { font-size: 11px; margin-bottom: 6px; color: #fff; }
         .obs-link-box input { font-size: 11px; padding: 6px; }
 
-        /* --- WIDGET STYLES (Controlled via URL variables) --- */
+        /* --- WIDGET STYLES --- */
         .widget-container {
             background: var(--bg-color);
             backdrop-filter: blur(12px);
@@ -327,7 +326,7 @@
             if (isObsMode) {
                 document.body.classList.add('is-obs');
                 
-                // Apply Custom Styles from URL Parameters
+                // Apply Styles
                 const root = document.documentElement;
                 root.style.setProperty('--border-radius', urlParams.get('radius') || '16px');
                 root.style.setProperty('--border-width', urlParams.get('bwidth') || '1px');
@@ -342,12 +341,23 @@
                 widgetEl.classList.add(layout);
                 widgetEl.classList.remove('hidden');
 
-                const token = localStorage.getItem('sp_access_token');
-                if (!token) {
-                    document.getElementById('trackTitle').innerText = "Auth Required";
-                    document.getElementById('trackArtist').innerText = "Open configuration page first";
+                // Extract tokens passed directly via URL parameters
+                const token = urlParams.get('token');
+                const refreshToken = urlParams.get('rtoken');
+                const clientId = urlParams.get('cid');
+                const channel = urlParams.get('ch');
+
+                if (!token || !clientId || !channel) {
+                    document.getElementById('trackTitle').innerText = "Config Error";
+                    document.getElementById('trackArtist').innerText = "Please regenerate your link from the main page";
                     return;
                 }
+
+                // Store them locally for runtime session usage
+                localStorage.setItem('sp_access_token', token);
+                localStorage.setItem('sp_refresh_token', refreshToken);
+                localStorage.setItem('sp_client_id', clientId);
+                localStorage.setItem('twitch_channel', channel);
 
                 startPlayerPolling();
                 connectTwitchChat();
@@ -424,7 +434,6 @@
         function showObsLinkGenerator() {
             document.getElementById('setupScreen').classList.remove('hidden');
             
-            // Gather styling parameters
             const layout = document.getElementById('layoutModeInput').value;
             const align = document.getElementById('textAlignInput').value;
             const radius = document.getElementById('borderRadiusInput').value;
@@ -434,7 +443,12 @@
             const tcolor = document.getElementById('textColorInput').value;
             const stcolor = document.getElementById('secondaryColorInput').value;
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}`;
+            const token = localStorage.getItem('sp_access_token') || '';
+            const rtoken = localStorage.getItem('sp_refresh_token') || '';
+            const cid = localStorage.getItem('sp_client_id') || '';
+            const ch = localStorage.getItem('twitch_channel') || '';
+
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid)}&ch=${encodeURIComponent(ch)}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
             document.getElementById('linkBox').classList.remove('hidden');
@@ -541,7 +555,6 @@
             let searchData = await searchRes.json();
             
             if (searchData.tracks && searchData.tracks.items.length > 0) {
-                let trackUri = searchData.tracks.items[0].url || searchData.tracks.items[0].uri;
                 let trackName = searchData.tracks.items[0].name;
 
                 let queueRes = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(searchData.tracks.items[0].uri)}`, {
