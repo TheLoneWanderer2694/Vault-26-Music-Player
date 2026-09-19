@@ -107,7 +107,7 @@
         }
 
         .obs-link-box p { font-size: 11px; margin-bottom: 4px; color: #fff; }
-        .obs-link-box input { font-size: 11px; padding: 5px; }
+        .obs-link-box input { font-size: 11px; padding: 5px; cursor: pointer; }
 
         .preview-label {
             font-size: 11px;
@@ -251,14 +251,14 @@
         <div class="row">
             <div class="form-group">
                 <label>Layout Mode</label>
-                <select id="layoutModeInput" onchange="applyStylesAndLink()">
+                <select id="layoutModeInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
                     <option value="compact">Compact (Side Art)</option>
                     <option value="full-art">Full Album Art Backdrop</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Text Alignment</label>
-                <select id="textAlignInput" onchange="applyStylesAndLink()">
+                <select id="textAlignInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
                     <option value="left">Left</option>
                     <option value="center">Center</option>
                     <option value="right">Right</option>
@@ -315,8 +315,8 @@
 
         <button type="button" onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
 
-        <div id="linkBox" class="obs-link-box hidden">
-            <p><strong>Copy this updated link into your OBS Browser Source:</strong></p>
+        <div id="linkBox" class="obs-link-box">
+            <p><strong>Copy this OBS Browser Source Link:</strong></p>
             <input type="text" id="obsGeneratedLink" readonly onclick="this.select()">
         </div>
     </div>
@@ -344,7 +344,7 @@
             if (isObsMode) {
                 document.body.classList.add('is-obs');
                 
-                // Apply Styles in OBS mode
+                // Apply Styles in OBS mode from URL params
                 const root = document.documentElement;
                 root.style.setProperty('--border-radius', urlParams.get('radius') || '16px');
                 root.style.setProperty('--border-width', urlParams.get('bwidth') || '1px');
@@ -405,7 +405,7 @@
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
 
-            // Save input state immediately so it won't clear
+            // Save input state immediately
             const cid = document.getElementById('clientIdInput').value.trim();
             const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase();
             if (cid) localStorage.setItem('sp_client_id', cid);
@@ -429,15 +429,13 @@
                 preview.style.backgroundImage = 'none';
             }
 
-            // Update OBS Link if token exists
-            const token = localStorage.getItem('sp_access_token');
-            if (token) {
-                const rtoken = localStorage.getItem('sp_refresh_token') || '';
-                const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || localStorage.getItem('sp_client_id') || '')}&ch=${encodeURIComponent(channel || localStorage.getItem('twitch_channel') || '')}`;
-                
-                document.getElementById('obsGeneratedLink').value = obsUrl;
-                document.getElementById('linkBox').classList.remove('hidden');
-            }
+            // Always generate OBS Link containing all custom parameters
+            const token = localStorage.getItem('sp_access_token') || '';
+            const rtoken = localStorage.getItem('sp_refresh_token') || '';
+
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || localStorage.getItem('sp_client_id') || '')}&ch=${encodeURIComponent(channel || localStorage.getItem('twitch_channel') || '')}`;
+            
+            document.getElementById('obsGeneratedLink').value = obsUrl;
         }
 
         async function saveSettingsAndAuth() {
