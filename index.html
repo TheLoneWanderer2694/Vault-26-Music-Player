@@ -49,7 +49,7 @@
             padding: 24px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 500px;
+            max-width: 520px;
             width: 100%;
             text-align: left;
             max-height: 95vh;
@@ -98,6 +98,10 @@
             font-size: 13px;
         }
 
+        .test-row { display: flex; gap: 6px; margin-top: 6px; }
+        .test-row button { background: #3f3f46; font-size: 11px; padding: 6px; margin-top: 0; }
+        .test-row button:hover { background: #52525b; }
+
         .obs-link-box {
             margin-top: 12px;
             padding: 10px;
@@ -130,6 +134,13 @@
             text-align: var(--text-align);
             overflow: hidden;
             position: relative;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .widget-container.transparent-obs {
+            opacity: 0;
+            pointer-events: none;
         }
 
         /* Layout: Compact */
@@ -248,23 +259,28 @@
 
         .widget-container.pill .progress-bar { display: none; }
 
+        /* Typography */
+        .track-title-wrapper, .track-artist-wrapper {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
         .track-title {
             font-size: 15px;
             font-weight: 700;
             color: var(--text-color);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: inline-block;
             margin-bottom: 2px;
+            text-overflow: ellipsis;
         }
 
         .track-artist {
             font-size: 12px;
             color: var(--secondary-text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: inline-block;
             margin-bottom: 6px;
+            text-overflow: ellipsis;
         }
 
         .request-status {
@@ -300,7 +316,7 @@
     <!-- Setup Screen (Configurator) -->
     <div id="setupScreen" class="setup-container hidden">
         <h2>Spotify Widget Studio</h2>
-        <p>Customize your styling below. Watch the live preview update instantly!</p>
+        <p>Advanced Customization & Live Simulation Studio</p>
         
         <div class="row">
             <div class="form-group">
@@ -367,21 +383,45 @@
             </div>
         </div>
 
-        <div class="preview-label">Live Preview</div>
+        <div class="row">
+            <div class="form-group">
+                <label>Show Progress Bar?</label>
+                <select id="showProgressInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
+                    <option value="yes">Enabled</option>
+                    <option value="no">Hidden</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Auto-Hide When Paused?</label>
+                <select id="autoHideInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
+                    <option value="yes">Hide After 5s Inactive</option>
+                    <option value="no">Always Visible</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="preview-label">Live Preview & Test Controls</div>
+        
         <!-- Configurator Live Preview Widget -->
         <div id="previewWidget" class="widget-container compact">
             <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
             <div class="track-info">
-                <div class="track-title">Sample Song Title</div>
-                <div class="track-artist">Artist Name • Album Name</div>
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
+                <div class="track-title-wrapper"><div id="previewTitle" class="track-title">Sample Song Title</div></div>
+                <div class="track-artist-wrapper"><div id="previewArtist" class="track-artist">Artist Name • Album Name</div></div>
+                <div id="previewProgressBar" class="progress-bar">
+                    <div class="progress-fill" style="width: 65%;"></div>
                 </div>
-                <div class="request-status">Requested by @Viewer123</div>
+                <div id="previewStatus" class="request-status">Requested by @Viewer123</div>
             </div>
         </div>
 
-        <button type="button" onclick="saveSettingsAndAuth()">Re-Authorize Spotify</button>
+        <div class="test-row">
+            <button type="button" onclick="testSimulatePlaying()">▶ Test Playing</button>
+            <button type="button" onclick="testSimulatePaused()">⏸ Test Paused</button>
+            <button type="button" onclick="testSimulateRequest()">💬 Test !sr Popups</button>
+        </div>
+
+        <button type="button" onclick="saveSettingsAndAuth()" style="margin-top: 10px;">Re-Authorize Spotify</button>
 
         <div id="linkBox" class="obs-link-box">
             <p><strong>Copy this OBS Browser Source Link:</strong></p>
@@ -393,9 +433,9 @@
     <div id="widgetScreen" class="widget-container hidden">
         <img id="albumArt" class="album-art" src="" alt="Album Art">
         <div class="track-info">
-            <div id="trackTitle" class="track-title">Not Playing</div>
-            <div id="trackArtist" class="track-artist">Open Spotify to start</div>
-            <div class="progress-bar">
+            <div class="track-title-wrapper"><div id="trackTitle" class="track-title">Not Playing</div></div>
+            <div class="track-artist-wrapper"><div id="trackArtist" class="track-artist">Open Spotify to start</div></div>
+            <div id="obsProgressBar" class="progress-bar">
                 <div id="progressFill" class="progress-fill"></div>
             </div>
             <div id="requestStatus" class="request-status"></div>
@@ -407,6 +447,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const isObsMode = urlParams.get('obs') === 'true';
+
+        let hideTimer = null;
 
         window.onload = async () => {
             if (isObsMode) {
@@ -421,6 +463,10 @@
                 root.style.setProperty('--text-color', urlParams.get('tcolor') || '#ffffff');
                 root.style.setProperty('--secondary-text', urlParams.get('stcolor') || '#b3b3b3');
                 root.style.setProperty('--text-align', urlParams.get('align') || 'left');
+
+                if (urlParams.get('prog') === 'no') {
+                    document.getElementById('obsProgressBar').classList.add('hidden');
+                }
 
                 const layout = urlParams.get('layout') || 'compact';
                 const widgetEl = document.getElementById('widgetScreen');
@@ -472,6 +518,8 @@
             const stcolor = document.getElementById('secondaryColorInput').value || '#b3b3b3';
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
+            const prog = document.getElementById('showProgressInput').value || 'yes';
+            const autohide = document.getElementById('autoHideInput').value || 'yes';
 
             // Save input state immediately
             const cid = document.getElementById('clientIdInput').value.trim();
@@ -491,6 +539,13 @@
 
             preview.className = `widget-container ${layout}`;
 
+            const progBar = document.getElementById('previewProgressBar');
+            if (prog === 'no') {
+                progBar.classList.add('hidden');
+            } else {
+                progBar.classList.remove('hidden');
+            }
+
             if (layout === 'full-art') {
                 preview.style.backgroundImage = `url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&auto=format&fit=crop&q=80')`;
             } else {
@@ -501,9 +556,37 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || localStorage.getItem('sp_client_id') || '')}&ch=${encodeURIComponent(channel || localStorage.getItem('twitch_channel') || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&prog=${prog}&autohide=${autohide}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&stcolor=${encodeURIComponent(stcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || localStorage.getItem('sp_client_id') || '')}&ch=${encodeURIComponent(channel || localStorage.getItem('twitch_channel') || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
+        }
+
+        function testSimulatePlaying() {
+            const preview = document.getElementById('previewWidget');
+            preview.classList.remove('transparent-obs');
+            document.getElementById('previewTitle').innerText = "Blinding Lights";
+            document.getElementById('previewArtist').innerText = "The Weeknd • After Hours";
+            document.getElementById('previewStatus').innerText = "Playing Live in Studio";
+        }
+
+        function testSimulatePaused() {
+            const preview = document.getElementById('previewWidget');
+            document.getElementById('previewTitle').innerText = "Playback Paused / Inactive";
+            document.getElementById('previewArtist').innerText = "Hiding in 5 seconds...";
+            document.getElementById('previewStatus').innerText = "";
+            
+            setTimeout(() => {
+                preview.classList.add('transparent-obs');
+            }, 5000);
+        }
+
+        function testSimulateRequest() {
+            const preview = document.getElementById('previewWidget');
+            preview.classList.remove('transparent-obs');
+            document.getElementById('previewStatus').innerText = "Requested by @StreamFan99";
+            setTimeout(() => {
+                document.getElementById('previewStatus').innerText = "Added: Bohemian Rhapsody";
+            }, 3000);
         }
 
         async function saveSettingsAndAuth() {
@@ -576,6 +659,8 @@
         }
 
         function startPlayerPolling() {
+            const autoHideEnabled = urlParams.get('autohide') !== 'no';
+
             setInterval(async () => {
                 let token = localStorage.getItem('sp_access_token');
                 let res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
@@ -587,10 +672,27 @@
                     return;
                 }
 
-                if (res.status === 204 || res.status > 300) return;
+                const widgetEl = document.getElementById('widgetScreen');
+
+                if (res.status === 204 || res.status > 300) {
+                    // Nothing playing or paused
+                    if (autoHideEnabled && !hideTimer) {
+                        hideTimer = setTimeout(() => {
+                            widgetEl.classList.add('transparent-obs');
+                        }, 5000); // 5 seconds delay before fading out
+                    }
+                    return;
+                }
 
                 let data = await res.json();
                 if (data && data.item) {
+                    // Music is active/playing -> cancel any pending hide timer and show widget
+                    if (hideTimer) {
+                        clearTimeout(hideTimer);
+                        hideTimer = null;
+                    }
+                    widgetEl.classList.remove('transparent-obs');
+
                     document.getElementById('trackTitle').innerText = data.item.name;
                     document.getElementById('trackArtist').innerText = data.item.artists.map(a => a.name).join(', ');
                     
@@ -600,7 +702,7 @@
 
                     const layout = urlParams.get('layout') || 'compact';
                     if (layout === 'full-art' && imageUrl) {
-                        document.getElementById('widgetScreen').style.backgroundImage = `url('${imageUrl}')`;
+                        widgetEl.style.backgroundImage = `url('${imageUrl}')`;
                     }
                     
                     let progress = (data.progress_ms / data.item.duration_ms) * 100;
