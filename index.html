@@ -935,6 +935,12 @@
                             } else {
                                 showRequestStatus(`@${user}: !skip requires Mod/VIP`);
                             }
+                        } else if (message === '!clear') {
+                            if (isModOrVip) {
+                                await clearQueue();
+                            } else {
+                                showRequestStatus(`@${user}: !clear requires Mod/VIP`);
+                            }
                         }
                     }
                 }
@@ -976,6 +982,38 @@
             });
             if (res.ok || res.status === 204) {
                 showRequestStatus("Skipped track via command");
+            }
+        }
+
+        async function clearQueue() {
+            let token = localStorage.getItem('sp_access_token');
+            let success = true;
+            
+            // Spotify doesn't have a native single endpoint to clear the entire queue directly,
+            // so we loop through skipping the next track until the queue is empty or max attempts reached.
+            for (let i = 0; i < 15; i++) {
+                let queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!queueRes.ok) break;
+                let queueData = await queueRes.json();
+                if (!queueData.queue || queueData.queue.length === 0) break;
+
+                let skipRes = await fetch('https://api.spotify.com/v1/me/player/next', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!skipRes.ok && skipRes.status !== 204) {
+                    success = false;
+                    break;
+                }
+            }
+
+            if (success) {
+                showRequestStatus("Queue cleared via !clear");
+                await fetchQueueList();
+            } else {
+                showRequestStatus("Failed to fully clear queue");
             }
         }
 
