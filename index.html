@@ -907,6 +907,7 @@
             const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
             ws.onopen = () => {
+                ws.send('CAP REQ :twitch.tv/tags :twitch.tv/commands');
                 ws.send('PASS SCHMOOPIIE');
                 ws.send('NICK justinfan' + Math.floor(Math.random() * 80000));
                 ws.send(`JOIN #${channel}`);
@@ -915,14 +916,13 @@
             ws.onmessage = async (event) => {
                 if (event.data.includes('PRIVMSG')) {
                     const rawMessage = event.data;
-                    const match = rawMessage.match(/@([^ ]+) .:(.+)!\S+ PRIVMSG #\S+ :(.+)/);
+                    const match = rawMessage.match(/^(?:@([^ ]+) )?:([^!]+)!\S+ PRIVMSG #\S+ :(.+)$/);
                     if (match) {
-                        const tags = match[1];
+                        const tags = match[1] || '';
                         const user = match[2];
                         const message = match[3].trim();
 
-                        const isModOrVip = tags.includes('badges=') && 
-                            (tags.includes('moderator/1') || tags.includes('vip/1') || tags.includes('broadcaster/1'));
+                        const isModOrVip = tags.includes('moderator/1') || tags.includes('vip/1') || tags.includes('broadcaster/1');
 
                         let query = null;
                         if (message.startsWith('!sr ') || message.startsWith('!request ')) {
@@ -989,8 +989,6 @@
             let token = localStorage.getItem('sp_access_token');
             let success = true;
             
-            // Spotify doesn't have a native single endpoint to clear the entire queue directly,
-            // so we loop through skipping the next track until the queue is empty or max attempts reached.
             for (let i = 0; i < 15; i++) {
                 let queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
                     headers: { 'Authorization': `Bearer ${token}` }
