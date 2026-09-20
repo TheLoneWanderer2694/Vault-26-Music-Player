@@ -153,8 +153,8 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            width: 100%;
-            max-width: 350px;
+            width: 350px;
+            max-width: 100%;
             opacity: 1;
             visibility: visible;
             transform: scale(var(--widget-scale));
@@ -363,7 +363,7 @@
         .widget-container.zelda .progress-fill { background: #d4af37; }
         .widget-container.zelda .request-status { color: #f0e68c; }
 
-        /* Queue List Bottom Panel 🎶 (Positioned absolute so it floats without shifting the top) */
+        /* Queue List Bottom Panel 🎶 (Matches exact width of the main widget container) */
         .queue-container {
             position: absolute;
             top: calc(100% + 8px);
@@ -415,6 +415,7 @@
             align-items: center;
             gap: 10px;
             font-size: 11px;
+            width: 100%;
         }
 
         .queue-item img {
