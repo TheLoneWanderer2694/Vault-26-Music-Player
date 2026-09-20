@@ -459,6 +459,11 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label>Fallback Playlist ID or URI (Auto-fills queue if empty)</label>
+            <input type="text" id="fallbackPlaylistInput" placeholder="e.g., 3cEYpjA9oz9GiPac4AsH4n or spotify:playlist:..." oninput="applyStylesAndLink()">
+        </div>
+
         <div class="row">
             <div class="form-group">
                 <label>Layout Mode</label>
@@ -643,6 +648,7 @@
                 const clientId = urlParams.get('cid');
                 const rawChannel = urlParams.get('ch') || '';
                 const channel = rawChannel.replace(/^#/, '').trim().toLowerCase();
+                const fallbackId = urlParams.get('fallback') || '';
 
                 if (!token || !clientId || !channel) {
                     document.getElementById('trackTitle').innerText = "Config Error";
@@ -654,6 +660,7 @@
                 localStorage.setItem('sp_refresh_token', refreshToken);
                 localStorage.setItem('sp_client_id', clientId);
                 localStorage.setItem('twitch_channel', channel);
+                localStorage.setItem('fallback_playlist', fallbackId);
 
                 startPlayerPolling();
                 connectTwitchChat();
@@ -667,8 +674,10 @@
 
             const savedClientId = localStorage.getItem('sp_client_id');
             const savedChannel = localStorage.getItem('twitch_channel');
+            const savedFallback = localStorage.getItem('fallback_playlist');
             if (savedClientId) document.getElementById('clientIdInput').value = savedClientId;
             if (savedChannel) document.getElementById('twitchChannelInput').value = savedChannel;
+            if (savedFallback) document.getElementById('fallbackPlaylistInput').value = savedFallback;
 
             document.getElementById('setupScreen').classList.remove('hidden');
             applyStylesAndLink();
@@ -696,8 +705,18 @@
 
             const cid = document.getElementById('clientIdInput').value.trim();
             const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
+            let fallback = document.getElementById('fallbackPlaylistInput').value.trim();
+            
+            // Clean up fallback ID if user pasted full Spotify URL or URI
+            if (fallback.includes('spotify.com/playlist/')) {
+                fallback = fallback.split('playlist/')[1].split('?')[0];
+            } else if (fallback.startsWith('spotify:playlist:')) {
+                fallback = fallback.split(':')[2];
+            }
+
             if (cid) localStorage.setItem('sp_client_id', cid);
             if (channel) localStorage.setItem('twitch_channel', channel);
+            if (fallback) localStorage.setItem('fallback_playlist', fallback);
 
             const previewWrapper = document.getElementById('previewWrapper');
             previewWrapper.style.setProperty('--border-radius', radius);
@@ -727,7 +746,7 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}&fallback=${encodeURIComponent(fallback || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
         }
@@ -767,7 +786,7 @@
             localStorage.setItem('sp_verifier', verifier);
             const challenge = await sha256(verifier);
 
-            const scope = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
+            const scope = 'user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative';
             const authUrl = new URL('https://accounts.spotify.com/authorize');
             authUrl.searchParams.append('client_id', cid);
             authUrl.searchParams.append('response_type', 'code');
@@ -882,8 +901,17 @@
                 let queueListEl = document.getElementById('queueItemsList');
                 if (!queueListEl) return;
                 
-                queueListEl.innerHTML = '';
                 let upcoming = data.queue.slice(0, 3);
+                
+                // --- FALLBACK PLAYLIST CHECK ---
+                const fallbackId = localStorage.getItem('fallback_playlist');
+                if (upcoming.length === 0 && fallbackId) {
+                    console.log("Queue is empty. Pulling fallback track from playlist:", fallbackId);
+                    await injectFallbackTrack(token, fallbackId);
+                    return; // Will refresh on the next cycle
+                }
+
+                queueListEl.innerHTML = '';
                 if (upcoming.length === 0) {
                     queueListEl.innerHTML = '<div style="color:var(--secondary-text); font-size:10px;">Queue is empty</div>';
                     return;
@@ -903,6 +931,31 @@
             }
         }
 
+        async function injectFallbackTrack(token, playlistId) {
+            try {
+                let plRes = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!plRes.ok) return;
+                let plData = await plRes.json();
+                if (!plData.items || plData.items.length === 0) return;
+
+                // Pick a random track from the fallback playlist
+                let validItems = plData.items.filter(item => item.track && item.track.uri);
+                if (validItems.length === 0) return;
+                let randomTrack = validItems[Math.floor(Math.random() * validItems.length)].track;
+
+                // Push to active playback queue
+                await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(randomTrack.uri)}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                console.log("Injected fallback track:", randomTrack.name);
+            } catch (err) {
+                console.error("Error pushing fallback playlist track:", err);
+            }
+        }
+
         function connectTwitchChat() {
             const channel = (localStorage.getItem('twitch_channel') || '').replace(/^#/, '').trim().toLowerCase();
             console.log("Connecting to Twitch chat for channel:", channel);
@@ -918,7 +971,6 @@
 
             ws.onmessage = async (event) => {
                 if (event.data.includes('PRIVMSG')) {
-                    console.log("Twitch message received:", event.data);
                     const rawMessage = event.data;
                     const match = rawMessage.match(/^(?:@([^ ]+) )?:([^!]+)!\S+ PRIVMSG #\S+ :(.+)$/);
                     if (match) {
