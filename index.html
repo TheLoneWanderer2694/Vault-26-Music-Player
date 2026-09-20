@@ -74,6 +74,7 @@
         }
 
         .setup-container input[type="text"], 
+        .setup-container input[type="number"],
         .setup-container input[type="range"], 
         .setup-container select {
             width: 100%;
@@ -510,6 +511,17 @@
 
         <div class="row">
             <div class="form-group">
+                <label>Queue Visible Time (Sec)</label>
+                <input type="number" id="queueShowTimeInput" min="2" max="120" value="10" oninput="applyStylesAndLink()">
+            </div>
+            <div class="form-group">
+                <label>Queue Hidden Time (Sec)</label>
+                <input type="number" id="queueHideTimeInput" min="2" max="300" value="15" oninput="applyStylesAndLink()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
                 <label>Enable Skip Command (!skip)</label>
                 <select id="enableSkipInput" oninput="applyStylesAndLink()">
                     <option value="yes">Allowed</option>
@@ -710,12 +722,18 @@
         };
 
         function startQueueVisibilityCycle() {
+            if (autoQueueTimer) clearTimeout(autoQueueTimer);
+
+            // Fetch configured times or fall back to defaults (Show: 10s, Hide: 15s)
+            const showSecs = parseInt(urlParams.get('qshow') || document.getElementById('queueShowTimeInput')?.value || '10') * 1000;
+            const hideSecs = parseInt(urlParams.get('qhide') || document.getElementById('queueHideTimeInput')?.value || '15') * 1000;
+
             function scheduleHide() {
                 autoQueueTimer = setTimeout(() => {
                     const queueEls = [document.getElementById('queueContainer'), document.getElementById('previewQueueContainer')];
                     queueEls.forEach(el => { if (el) el.classList.add('queue-hidden'); });
                     scheduleShow();
-                }, 15000);
+                }, showSecs);
             }
 
             function scheduleShow() {
@@ -723,7 +741,7 @@
                     const queueEls = [document.getElementById('queueContainer'), document.getElementById('previewQueueContainer')];
                     queueEls.forEach(el => { if (el) el.classList.remove('queue-hidden'); });
                     scheduleHide();
-                }, 10000);
+                }, hideSecs);
             }
 
             scheduleHide();
@@ -747,6 +765,8 @@
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
             const queueVis = document.getElementById('queueVisibilityInput').value || 'auto';
+            const queueShowTime = document.getElementById('queueShowTimeInput').value || '10';
+            const queueHideTime = document.getElementById('queueHideTimeInput').value || '15';
             const skip = document.getElementById('enableSkipInput').value;
             const skipPerm = document.getElementById('skipPermissionInput').value;
 
@@ -773,6 +793,7 @@
                     previewQueue.classList.remove('queue-hidden');
                 } else {
                     previewQueue.classList.remove('queue-hidden');
+                    startQueueVisibilityCycle();
                 }
             }
 
@@ -795,7 +816,7 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&qshow=${queueShowTime}&qhide=${queueHideTime}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
         }
