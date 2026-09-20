@@ -455,7 +455,7 @@
             </div>
             <div class="form-group">
                 <label>Twitch Channel</label>
-                <input type="text" id="twitchChannelInput" placeholder="Channel name" oninput="applyStylesAndLink()">
+                <input type="text" id="twitchChannelInput" placeholder="Channel name (no #)" oninput="applyStylesAndLink()">
             </div>
         </div>
 
@@ -641,7 +641,8 @@
                 const token = urlParams.get('token');
                 const refreshToken = urlParams.get('rtoken');
                 const clientId = urlParams.get('cid');
-                const channel = urlParams.get('ch');
+                const rawChannel = urlParams.get('ch') || '';
+                const channel = rawChannel.replace(/^#/, '').trim().toLowerCase();
 
                 if (!token || !clientId || !channel) {
                     document.getElementById('trackTitle').innerText = "Config Error";
@@ -694,7 +695,7 @@
             const skipPerm = document.getElementById('skipPermissionInput').value;
 
             const cid = document.getElementById('clientIdInput').value.trim();
-            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase();
+            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
             if (cid) localStorage.setItem('sp_client_id', cid);
             if (channel) localStorage.setItem('twitch_channel', channel);
 
@@ -756,7 +757,7 @@
 
         async function saveSettingsAndAuth() {
             const cid = document.getElementById('clientIdInput').value.trim();
-            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase();
+            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
             if (!cid || !channel) return alert('Please fill in your Client ID and Twitch channel.');
             
             localStorage.setItem('sp_client_id', cid);
@@ -903,7 +904,8 @@
         }
 
         function connectTwitchChat() {
-            const channel = localStorage.getItem('twitch_channel');
+            const channel = (localStorage.getItem('twitch_channel') || '').replace(/^#/, '').trim().toLowerCase();
+            console.log("Connecting to Twitch chat for channel:", channel);
             const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
             ws.onopen = () => {
@@ -911,10 +913,12 @@
                 ws.send('PASS SCHMOOPIIE');
                 ws.send('NICK justinfan' + Math.floor(Math.random() * 80000));
                 ws.send(`JOIN #${channel}`);
+                console.log(`Joined channel #${channel}`);
             };
 
             ws.onmessage = async (event) => {
                 if (event.data.includes('PRIVMSG')) {
+                    console.log("Twitch message received:", event.data);
                     const rawMessage = event.data;
                     const match = rawMessage.match(/^(?:@([^ ]+) )?:([^!]+)!\S+ PRIVMSG #\S+ :(.+)$/);
                     if (match) {
@@ -947,6 +951,7 @@
             };
 
             ws.onclose = () => {
+                console.log("Twitch WS closed. Reconnecting in 5s...");
                 setTimeout(connectTwitchChat, 5000);
             };
         }
@@ -968,6 +973,10 @@
                 if (queueRes.ok || queueRes.status === 204) {
                     showRequestStatus(`Added: ${trackName}`);
                     await fetchQueueList();
+                } else {
+                    let errData = await queueRes.json().catch(() => ({}));
+                    console.error("Spotify Queue Error:", errData);
+                    showRequestStatus("Error: Open Spotify & play a song first!");
                 }
             } else {
                 showRequestStatus(`Track not found`);
@@ -982,6 +991,8 @@
             });
             if (res.ok || res.status === 204) {
                 showRequestStatus("Skipped track via command");
+            } else {
+                showRequestStatus("Error: No active Spotify device!");
             }
         }
 
