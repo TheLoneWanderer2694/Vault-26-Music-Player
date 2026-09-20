@@ -14,6 +14,7 @@
             --border-width: 1px;
             --border-color: rgba(255, 255, 255, 0.1);
             --text-align: left;
+            --widget-scale: 1;
         }
 
         * {
@@ -154,7 +155,9 @@
             max-width: 350px;
             opacity: 1;
             visibility: visible;
-            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+            transform: scale(var(--widget-scale));
+            transform-origin: bottom left;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.2s ease-out;
         }
 
         .widget-wrapper.transparent-obs {
@@ -480,12 +483,19 @@
 
         <div class="row">
             <div class="form-group">
+                <label>Widget Scale (<span id="scaleVal">100</span>%)</label>
+                <input type="range" id="widgetScaleInput" min="50" max="200" step="5" value="100" oninput="applyStylesAndLink()">
+            </div>
+            <div class="form-group">
                 <label>Enable Skip Command (!skip)</label>
                 <select id="enableSkipInput" oninput="applyStylesAndLink()">
                     <option value="yes">Allowed</option>
                     <option value="no">Disabled</option>
                 </select>
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Skip Permission</label>
                 <select id="skipPermissionInput" oninput="applyStylesAndLink()">
@@ -493,39 +503,37 @@
                     <option value="everyone">Everyone (Public)</option>
                 </select>
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Border Radius</label>
                 <input type="text" id="borderRadiusInput" value="16px" oninput="applyStylesAndLink()">
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Border Width</label>
                 <input type="text" id="borderWidthInput" value="1px" oninput="applyStylesAndLink()">
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Border Color</label>
                 <input type="color" id="borderColorInput" value="#ffffff" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Background Color Picker</label>
-                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
-            </div>
         </div>
 
         <div class="row">
             <div class="form-group">
+                <label>Background Color Picker</label>
+                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
+            </div>
+            <div class="form-group">
                 <label>Background Opacity (<span id="opacityVal">75</span>%)</label>
                 <input type="range" id="bgOpacityInput" min="0" max="100" value="75" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Text Color</label>
-                <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
-            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Text Color</label>
+            <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
         </div>
 
         <div class="preview-label">Live Preview & Test Controls</div>
@@ -618,6 +626,7 @@
                 root.style.setProperty('--text-color', urlParams.get('tcolor') || '#ffffff');
                 root.style.setProperty('--secondary-text', urlParams.get('stcolor') || '#b3b3b3');
                 root.style.setProperty('--text-align', urlParams.get('align') || 'left');
+                root.style.setProperty('--widget-scale', urlParams.get('scale') || '1');
 
                 const layout = urlParams.get('layout') || 'compact';
                 const widgetEl = document.getElementById('widgetScreen');
@@ -669,6 +678,10 @@
             const bwidth = document.getElementById('borderWidthInput').value || '1px';
             const bcolor = document.getElementById('borderColorInput').value || '#ffffff';
             
+            const scalePercent = document.getElementById('widgetScaleInput').value || '100';
+            document.getElementById('scaleVal').innerText = scalePercent;
+            const scale = scalePercent / 100;
+
             const bgColorHex = document.getElementById('bgColorPicker').value || '#121212';
             const bgOpacity = document.getElementById('bgOpacityInput').value;
             document.getElementById('opacityVal').innerText = bgOpacity;
@@ -692,6 +705,7 @@
             previewWrapper.style.setProperty('--bg-color', bgcolor);
             previewWrapper.style.setProperty('--text-color', tcolor);
             previewWrapper.style.setProperty('--text-align', align);
+            previewWrapper.style.setProperty('--widget-scale', scale);
 
             const preview = document.getElementById('previewWidget');
             preview.className = `widget-container ${layout}`;
@@ -712,7 +726,7 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&skip=${skip}&skipPerm=${skipPerm}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
         }
@@ -815,7 +829,6 @@
             setInterval(async () => {
                 let token = localStorage.getItem('sp_access_token');
                 
-                // Fetch player state and queue concurrently
                 await fetchQueueList();
 
                 let res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
@@ -869,7 +882,7 @@
                 if (!queueListEl) return;
                 
                 queueListEl.innerHTML = '';
-                let upcoming = data.queue.slice(0, 3); // Display top 3 upcoming tracks
+                let upcoming = data.queue.slice(0, 3);
                 if (upcoming.length === 0) {
                     queueListEl.innerHTML = '<div style="color:var(--secondary-text); font-size:10px;">Queue is empty</div>';
                     return;
