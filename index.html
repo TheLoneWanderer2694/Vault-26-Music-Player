@@ -769,6 +769,8 @@
             if (previewQueue) {
                 if (queueVis === 'hidden') {
                     previewQueue.classList.add('queue-hidden');
+                } else if (queueVis === 'enabled') {
+                    previewQueue.classList.remove('queue-hidden');
                 } else {
                     previewQueue.classList.remove('queue-hidden');
                 }
