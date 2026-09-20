@@ -348,7 +348,7 @@
             padding: 12px 16px;
             max-height: 220px;
             overflow-y: auto;
-            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out;
+            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out, max-height 0.4s ease-in-out, padding 0.4s ease-in-out, margin 0.4s ease-in-out, border 0.4s ease-in-out;
         }
 
         .queue-container.queue-hidden {
@@ -495,9 +495,20 @@
 
         <div class="row">
             <div class="form-group">
+                <label>Queue Visibility</label>
+                <select id="queueVisibilityInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
+                    <option value="auto">Auto Cycle (Fade In/Out)</option>
+                    <option value="enabled">Always Visible</option>
+                    <option value="hidden">Always Hidden</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Widget Scale (<span id="scaleVal">100</span>%)</label>
                 <input type="range" id="widgetScaleInput" min="50" max="200" step="5" value="100" oninput="applyStylesAndLink()">
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Enable Skip Command (!skip)</label>
                 <select id="enableSkipInput" oninput="applyStylesAndLink()">
@@ -505,9 +516,6 @@
                     <option value="no">Disabled</option>
                 </select>
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Skip Permission</label>
                 <select id="skipPermissionInput" oninput="applyStylesAndLink()">
@@ -515,37 +523,39 @@
                     <option value="everyone">Everyone (Public)</option>
                 </select>
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Border Radius</label>
                 <input type="text" id="borderRadiusInput" value="16px" oninput="applyStylesAndLink()">
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Border Width</label>
                 <input type="text" id="borderWidthInput" value="1px" oninput="applyStylesAndLink()">
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Border Color</label>
                 <input type="color" id="borderColorInput" value="#ffffff" oninput="applyStylesAndLink()">
+            </div>
+            <div class="form-group">
+                <label>Background Color Picker</label>
+                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
             </div>
         </div>
 
         <div class="row">
             <div class="form-group">
-                <label>Background Color Picker</label>
-                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
-            </div>
-            <div class="form-group">
                 <label>Background Opacity (<span id="opacityVal">75</span>%)</label>
                 <input type="range" id="bgOpacityInput" min="0" max="100" value="75" oninput="applyStylesAndLink()">
             </div>
-        </div>
-
-        <div class="form-group">
-            <label>Text Color</label>
-            <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
+            <div class="form-group">
+                <label>Text Color</label>
+                <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
+            </div>
         </div>
 
         <div class="preview-label">Live Preview & Test Controls</div>
@@ -625,6 +635,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const isObsMode = urlParams.get('obs') === 'true';
+        let autoQueueTimer = null;
 
         window.onload = async () => {
             if (isObsMode) {
@@ -650,6 +661,18 @@
                     document.getElementById('albumArt').classList.add('hidden');
                 }
 
+                const queueVis = urlParams.get('qvis') || 'auto';
+                const queueContainer = document.getElementById('queueContainer');
+                if (queueContainer) {
+                    if (queueVis === 'hidden') {
+                        queueContainer.classList.add('queue-hidden');
+                    } else if (queueVis === 'enabled') {
+                        queueContainer.classList.remove('queue-hidden');
+                    } else {
+                        startQueueVisibilityCycle();
+                    }
+                }
+
                 const token = urlParams.get('token');
                 const refreshToken = urlParams.get('rtoken');
                 const clientId = urlParams.get('cid');
@@ -668,7 +691,6 @@
                 localStorage.setItem('twitch_channel', channel);
 
                 startPlayerPolling();
-                startQueueVisibilityCycle();
                 connectTwitchChat();
                 return;
             }
@@ -688,21 +710,20 @@
         };
 
         function startQueueVisibilityCycle() {
-            // Cycle: Visible for 15s, then hidden for 10s, repeating continuously.
             function scheduleHide() {
-                setTimeout(() => {
+                autoQueueTimer = setTimeout(() => {
                     const queueEls = [document.getElementById('queueContainer'), document.getElementById('previewQueueContainer')];
                     queueEls.forEach(el => { if (el) el.classList.add('queue-hidden'); });
                     scheduleShow();
-                }, 15000); // 15 seconds visible
+                }, 15000);
             }
 
             function scheduleShow() {
-                setTimeout(() => {
+                autoQueueTimer = setTimeout(() => {
                     const queueEls = [document.getElementById('queueContainer'), document.getElementById('previewQueueContainer')];
                     queueEls.forEach(el => { if (el) el.classList.remove('queue-hidden'); });
                     scheduleHide();
-                }, 10000); // 10 seconds hidden
+                }, 10000);
             }
 
             scheduleHide();
@@ -725,6 +746,7 @@
             const tcolor = document.getElementById('textColorInput').value || '#ffffff';
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
+            const queueVis = document.getElementById('queueVisibilityInput').value || 'auto';
             const skip = document.getElementById('enableSkipInput').value;
             const skipPerm = document.getElementById('skipPermissionInput').value;
 
@@ -742,6 +764,15 @@
             previewWrapper.style.setProperty('--text-color', tcolor);
             previewWrapper.style.setProperty('--text-align', align);
             previewWrapper.style.setProperty('--widget-scale', scale);
+
+            const previewQueue = document.getElementById('previewQueueContainer');
+            if (previewQueue) {
+                if (queueVis === 'hidden') {
+                    previewQueue.classList.add('queue-hidden');
+                } else {
+                    previewQueue.classList.remove('queue-hidden');
+                }
+            }
 
             const preview = document.getElementById('previewWidget');
             preview.className = `widget-container ${layout}`;
@@ -762,7 +793,7 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
         }
