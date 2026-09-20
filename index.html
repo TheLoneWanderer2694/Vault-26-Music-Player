@@ -785,6 +785,7 @@
             localStorage.setItem('sp_verifier', verifier);
             const challenge = await sha256(verifier);
 
+            // Added playlist-read-private scope to ensure fallback playlists can always be read
             const scope = 'user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative';
             const authUrl = new URL('https://accounts.spotify.com/authorize');
             authUrl.searchParams.append('client_id', cid);
@@ -952,21 +953,39 @@
                 let plRes = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (!plRes.ok) return;
+                if (!plRes.ok) {
+                    console.error("Fallback Playlist fetch failed with status:", plRes.status);
+                    return;
+                }
                 let plData = await plRes.json();
-                if (!plData.items || plData.items.length === 0) return;
+                if (!plData.items || plData.items.length === 0) {
+                    console.warn("Fallback playlist is empty or returned no items.");
+                    return;
+                }
 
-                let validItems = plData.items.filter(item => item.track && item.track.uri);
-                if (validItems.length === 0) return;
+                // Filter out non-track items or items missing valid track URIs safely
+                let validItems = plData.items.filter(item => item && item.track && item.track.uri && !item.is_local);
+                if (validItems.length === 0) {
+                    console.warn("No valid track URIs found in fallback playlist.");
+                    return;
+                }
+
                 let randomTrack = validItems[Math.floor(Math.random() * validItems.length)].track;
 
-                await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(randomTrack.uri)}`, {
+                let qRes = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(randomTrack.uri)}`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                console.log("Injected fallback track:", randomTrack.name);
+                
+                if (qRes.ok || qRes.status === 204) {
+                    console.log("Successfully injected fallback track:", randomTrack.name);
+                    showRequestStatus(`Fallback: Added ${randomTrack.name}`);
+                } else {
+                    let errBody = await qRes.json().catch(() => ({}));
+                    console.error("Failed to inject fallback track to queue:", errBody);
+                }
             } catch (err) {
-                console.error("Error pushing fallback playlist track:", err);
+                console.error("Error processing fallback playlist injection:", err);
             }
         }
 
@@ -986,7 +1005,6 @@
             ws.onmessage = async (event) => {
                 const rawMessage = event.data;
                 if (rawMessage.includes('PRIVMSG')) {
-                    // Improved resilient regex parser for Twitch IRC messages
                     const parts = rawMessage.split(' PRIVMSG ');
                     if (parts.length < 2) return;
 
