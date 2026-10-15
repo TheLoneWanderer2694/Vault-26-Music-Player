@@ -152,7 +152,7 @@
         .widget-wrapper {
             position: relative;
             display: flex;
-            flex-direction: column-reverse; /* Keeps queue stacked visually above the player in flex flow if needed, or controlled via absolute layout */
+            flex-direction: column;
             gap: 8px;
             width: 350px;
             max-width: 100%;
@@ -161,12 +161,16 @@
             transform: scale(var(--widget-scale));
             transform-origin: top right;
             transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.2s ease-out;
-            overflow: visible; /* Allows top popup queue to display */
+            overflow: visible;
         }
 
         /* Dock to top right corner in OBS mode */
         body.is-obs .widget-wrapper {
             margin-left: auto;
+        }
+
+        .widget-wrapper.queue-top {
+            flex-direction: column-reverse;
         }
 
         .widget-wrapper.transparent-obs {
@@ -370,10 +374,9 @@
         .widget-container.zelda .progress-fill { background: #d4af37; }
         .widget-container.zelda .request-status { color: #f0e68c; }
 
-        /* Queue List Top Panel 🎶 (Shows up to 5 upcoming tracks above the widget) */
+        /* Queue List Panel 🎶 */
         .queue-container {
             position: absolute;
-            bottom: calc(100% + 8px);
             left: 0;
             width: 100%;
             max-height: 150px;
@@ -391,6 +394,17 @@
             opacity: 1;
             visibility: visible;
             transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+
+        /* Dynamic Queue Position Styling */
+        .widget-wrapper:not(.queue-top) .queue-container {
+            top: calc(100% + 8px);
+            bottom: auto;
+        }
+
+        .widget-wrapper.queue-top .queue-container {
+            bottom: calc(100% + 8px);
+            top: auto;
         }
 
         .queue-container.queue-hidden {
@@ -543,8 +557,11 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Widget Scale (<span id="scaleVal">100</span>%)</label>
-                <input type="range" id="widgetScaleInput" min="50" max="200" step="5" value="100" oninput="applyStylesAndLink()">
+                <label>Queue Location</label>
+                <select id="queueLocationInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
+                    <option value="bottom">Bottom (Below Widget)</option>
+                    <option value="top">Top (Above Widget)</option>
+                </select>
             </div>
         </div>
 
@@ -561,12 +578,19 @@
 
         <div class="row">
             <div class="form-group">
+                <label>Widget Scale (<span id="scaleVal">100</span>%)</label>
+                <input type="range" id="widgetScaleInput" min="50" max="200" step="5" value="100" oninput="applyStylesAndLink()">
+            </div>
+            <div class="form-group">
                 <label>Enable Skip Command (!skip)</label>
                 <select id="enableSkipInput" oninput="applyStylesAndLink()">
                     <option value="yes">Allowed</option>
                     <option value="no">Disabled</option>
                 </select>
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Skip Permission</label>
                 <select id="skipPermissionInput" oninput="applyStylesAndLink()">
@@ -574,35 +598,35 @@
                     <option value="everyone">Everyone (Public)</option>
                 </select>
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Border Radius</label>
                 <input type="text" id="borderRadiusInput" value="16px" oninput="applyStylesAndLink()">
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Border Width</label>
                 <input type="text" id="borderWidthInput" value="1px" oninput="applyStylesAndLink()">
             </div>
-        </div>
-
-        <div class="row">
             <div class="form-group">
                 <label>Border Color</label>
                 <input type="color" id="borderColorInput" value="#ffffff" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Background Color Picker</label>
-                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
-            </div>
         </div>
 
         <div class="row">
             <div class="form-group">
+                <label>Background Color Picker</label>
+                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
+            </div>
+            <div class="form-group">
                 <label>Background Opacity (<span id="opacityVal">75</span>%)</label>
                 <input type="range" id="bgOpacityInput" min="0" max="100" value="75" oninput="applyStylesAndLink()">
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group">
                 <label>Text Color</label>
                 <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
@@ -613,7 +637,6 @@
         
         <!-- Configurator Live Preview Widget Wrapper -->
         <div id="previewWrapper" class="widget-wrapper">
-            <!-- Top Queue Panel -->
             <div id="previewQueueContainer" class="queue-container">
                 <div class="queue-header">Upcoming Queue</div>
                 <div class="queue-items">
@@ -666,7 +689,6 @@
 
     <!-- Live OBS Widget Wrapper -->
     <div id="widgetWrapper" class="widget-wrapper hidden">
-        <!-- Live Top Queue Panel -->
         <div id="queueContainer" class="queue-container">
             <div class="queue-header">Upcoming Queue</div>
             <div id="queueItemsList" class="queue-items"></div>
@@ -713,6 +735,13 @@
                 const widgetEl = document.getElementById('widgetScreen');
                 widgetEl.classList.add(layout);
                 document.getElementById('widgetWrapper').classList.remove('hidden');
+
+                const qloc = urlParams.get('qloc') || 'bottom';
+                if (qloc === 'top') {
+                    document.getElementById('widgetWrapper').classList.add('queue-top');
+                } else {
+                    document.getElementById('widgetWrapper').classList.remove('queue-top');
+                }
 
                 if (layout === 'vinyl') {
                     document.getElementById('liveVinylContainer').classList.remove('hidden');
@@ -810,6 +839,7 @@
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
             const queueVis = document.getElementById('queueVisibilityInput').value || 'auto';
+            const queueLoc = document.getElementById('queueLocationInput').value || 'bottom';
             const queueShowTime = document.getElementById('queueShowTimeInput').value || '10';
             const queueHideTime = document.getElementById('queueHideTimeInput').value || '15';
             const skip = document.getElementById('enableSkipInput').value;
@@ -829,6 +859,12 @@
             previewWrapper.style.setProperty('--text-color', tcolor);
             previewWrapper.style.setProperty('--text-align', align);
             previewWrapper.style.setProperty('--widget-scale', scale);
+
+            if (queueLoc === 'top') {
+                previewWrapper.classList.add('queue-top');
+            } else {
+                previewWrapper.classList.remove('queue-top');
+            }
 
             const previewQueue = document.getElementById('previewQueueContainer');
             if (previewQueue) {
@@ -861,7 +897,7 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&qshow=${queueShowTime}&qhide=${queueHideTime}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&qloc=${queueLoc}&qshow=${queueShowTime}&qhide=${queueHideTime}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
         }
