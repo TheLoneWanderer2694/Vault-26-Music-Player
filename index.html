@@ -152,7 +152,7 @@
         .widget-wrapper {
             position: relative;
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse; /* Keeps queue stacked visually above the player in flex flow if needed, or controlled via absolute layout */
             gap: 8px;
             width: 350px;
             max-width: 100%;
@@ -161,7 +161,7 @@
             transform: scale(var(--widget-scale));
             transform-origin: top right;
             transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.2s ease-out;
-            overflow: hidden;
+            overflow: visible; /* Allows top popup queue to display */
         }
 
         /* Dock to top right corner in OBS mode */
@@ -370,10 +370,10 @@
         .widget-container.zelda .progress-fill { background: #d4af37; }
         .widget-container.zelda .request-status { color: #f0e68c; }
 
-        /* Queue List Bottom Panel 🎶 (Shows up to 5 upcoming tracks) */
+        /* Queue List Top Panel 🎶 (Shows up to 5 upcoming tracks above the widget) */
         .queue-container {
             position: absolute;
-            top: calc(100% + 8px);
+            bottom: calc(100% + 8px);
             left: 0;
             width: 100%;
             max-height: 150px;
@@ -397,7 +397,7 @@
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
-            transform: translateY(-6px);
+            transform: translateY(6px);
         }
 
         .queue-header {
@@ -613,22 +613,7 @@
         
         <!-- Configurator Live Preview Widget Wrapper -->
         <div id="previewWrapper" class="widget-wrapper">
-            <div id="previewWidget" class="widget-container compact">
-                <div id="previewVinylContainer" class="vinyl-sleeve hidden">
-                    <div class="vinyl-record-grooves"></div>
-                    <img id="previewVinylArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
-                </div>
-                <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
-                <div class="track-info">
-                    <div class="track-title-wrapper"><div id="previewTitle" class="track-title">Sample Song Title</div></div>
-                    <div class="track-artist-wrapper"><div id="previewArtist" class="track-artist">Artist Name • Album Name</div></div>
-                    <div id="previewProgressBar" class="progress-bar">
-                        <div class="progress-fill" style="width: 65%;"></div>
-                    </div>
-                    <div id="previewStatus" class="request-status">Requested by @Viewer123</div>
-                </div>
-            </div>
-            <!-- Bottom Queue Panel -->
+            <!-- Top Queue Panel -->
             <div id="previewQueueContainer" class="queue-container">
                 <div class="queue-header">Upcoming Queue</div>
                 <div class="queue-items">
@@ -646,6 +631,21 @@
                             <div style="color:var(--secondary-text);">Sample Artist 2</div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div id="previewWidget" class="widget-container compact">
+                <div id="previewVinylContainer" class="vinyl-sleeve hidden">
+                    <div class="vinyl-record-grooves"></div>
+                    <img id="previewVinylArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
+                </div>
+                <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
+                <div class="track-info">
+                    <div class="track-title-wrapper"><div id="previewTitle" class="track-title">Sample Song Title</div></div>
+                    <div class="track-artist-wrapper"><div id="previewArtist" class="track-artist">Artist Name • Album Name</div></div>
+                    <div id="previewProgressBar" class="progress-bar">
+                        <div class="progress-fill" style="width: 65%;"></div>
+                    </div>
+                    <div id="previewStatus" class="request-status">Requested by @Viewer123</div>
                 </div>
             </div>
         </div>
@@ -666,6 +666,11 @@
 
     <!-- Live OBS Widget Wrapper -->
     <div id="widgetWrapper" class="widget-wrapper hidden">
+        <!-- Live Top Queue Panel -->
+        <div id="queueContainer" class="queue-container">
+            <div class="queue-header">Upcoming Queue</div>
+            <div id="queueItemsList" class="queue-items"></div>
+        </div>
         <div id="widgetScreen" class="widget-container">
             <div id="liveVinylContainer" class="vinyl-sleeve hidden">
                 <div class="vinyl-record-grooves"></div>
@@ -680,11 +685,6 @@
                 </div>
                 <div id="requestStatus" class="request-status"></div>
             </div>
-        </div>
-        <!-- Live Bottom Queue Panel -->
-        <div id="queueContainer" class="queue-container">
-            <div class="queue-header">Upcoming Queue</div>
-            <div id="queueItemsList" class="queue-items"></div>
         </div>
     </div>
 
