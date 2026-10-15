@@ -374,12 +374,12 @@
         .widget-container.zelda .progress-fill { background: #d4af37; }
         .widget-container.zelda .request-status { color: #f0e68c; }
 
-        /* Queue List Panel 🎶 (Expanded to hold all queued songs) */
+        /* Queue List Panel 🎶 (Enlarged Height for many songs) */
         .queue-container {
             position: absolute;
             left: 0;
             width: 100%;
-            max-height: 40vh;
+            max-height: 65vh;
             overflow-y: auto;
             scrollbar-width: none; /* Hide scrollbar for Firefox */
             background: var(--bg-color);
@@ -1077,7 +1077,6 @@
                 let queueListEl = document.getElementById('queueItemsList');
                 if (!queueListEl) return;
                 
-                // Fetch up to 20 queued tracks so all requested songs can display
                 let upcoming = data.queue.slice(0, 20);
 
                 queueListEl.innerHTML = '';
