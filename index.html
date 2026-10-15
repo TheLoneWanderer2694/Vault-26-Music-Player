@@ -169,10 +169,6 @@
             margin-left: auto;
         }
 
-        .widget-wrapper.queue-top {
-            flex-direction: column-reverse;
-        }
-
         .widget-wrapper.transparent-obs {
             opacity: 0 !important;
             visibility: hidden !important;
@@ -643,3 +639,483 @@
         
         <!-- Configurator Live Preview Widget Wrapper -->
         <div id="previewWrapper" class="widget-wrapper">
+            <div id="previewWidget" class="widget-container compact">
+                <div id="previewVinylContainer" class="vinyl-sleeve hidden">
+                    <div class="vinyl-record-grooves"></div>
+                    <img id="previewVinylArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
+                </div>
+                <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
+                <div class="track-info">
+                    <div class="track-title-wrapper"><div id="previewTitle" class="track-title">Sample Song Title</div></div>
+                    <div class="track-artist-wrapper"><div id="previewArtist" class="track-artist">Artist Name • Album Name</div></div>
+                    <div id="previewProgressBar" class="progress-bar">
+                        <div class="progress-fill" style="width: 65%;"></div>
+                    </div>
+                    <div id="previewStatus" class="request-status">Requested by @Viewer123</div>
+                </div>
+            </div>
+            <div id="previewQueueContainer" class="queue-container">
+                <div class="queue-header">Upcoming Queue</div>
+                <div class="queue-items">
+                    <div class="queue-item">
+                        <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&auto=format&fit=crop&q=80" alt="Art">
+                        <div class="queue-item-info">
+                            <div style="font-weight:700;">Sample Queue Track 1</div>
+                            <div style="color:var(--secondary-text);">Sample Artist 1</div>
+                        </div>
+                    </div>
+                    <div class="queue-item">
+                        <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&auto=format&fit=crop&q=80" alt="Art">
+                        <div class="queue-item-info">
+                            <div style="font-weight:700;">Sample Queue Track 2</div>
+                            <div style="color:var(--secondary-text);">Sample Artist 2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-row">
+            <button type="button" onclick="testSimulatePlaying()">▶ Test Playing</button>
+            <button type="button" onclick="testSimulatePaused()">⏸ Test Paused</button>
+            <button type="button" onclick="testSimulateRequest()">💬 Test !sr Popups</button>
+        </div>
+
+        <button type="button" onclick="saveSettingsAndAuth()" style="margin-top: 10px;">Re-Authorize Spotify</button>
+
+        <div id="linkBox" class="obs-link-box">
+            <p><strong>Copy this OBS Browser Source Link:</strong></p>
+            <input type="text" id="obsGeneratedLink" readonly onclick="this.select()">
+        </div>
+    </div>
+
+    <!-- Live OBS Widget Wrapper -->
+    <div id="widgetWrapper" class="widget-wrapper hidden">
+        <div id="widgetScreen" class="widget-container">
+            <div id="liveVinylContainer" class="vinyl-sleeve hidden">
+                <div class="vinyl-record-grooves"></div>
+                <img id="liveVinylArt" class="album-art" src="" alt="Album Art">
+            </div>
+            <img id="albumArt" class="album-art" src="" alt="Album Art">
+            <div class="track-info">
+                <div class="track-title-wrapper"><div id="trackTitle" class="track-title">Not Playing</div></div>
+                <div class="track-artist-wrapper"><div id="trackArtist" class="track-artist">Open Spotify to start</div></div>
+                <div id="obsProgressBar" class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <div id="requestStatus" class="request-status"></div>
+            </div>
+        </div>
+        <div id="queueContainer" class="queue-container">
+            <div class="queue-header">Upcoming Queue</div>
+            <div id="queueItemsList" class="queue-items"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = window.location.href.split('?')[0].split('#')[0];
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const isObsMode = urlParams.get('obs') === 'true';
+        let autoQueueTimer = null;
+
+        window.onload = async () => {
+            if (isObsMode) {
+                document.body.classList.add('is-obs');
+                
+                const root = document.documentElement;
+                root.style.setProperty('--border-radius', urlParams.get('radius') || '16px');
+                root.style.setProperty('--border-width', urlParams.get('bwidth') || '1px');
+                root.style.setProperty('--border-color', hexToRGBA(urlParams.get('bcolor') || '#ffffff', 0.2));
+                root.style.setProperty('--bg-color', urlParams.get('bgcolor') || 'rgba(18, 18, 18, 0.75)');
+                root.style.setProperty('--text-color', urlParams.get('tcolor') || '#ffffff');
+                root.style.setProperty('--secondary-text', urlParams.get('stcolor') || '#b3b3b3');
+                root.style.setProperty('--text-align', urlParams.get('align') || 'left');
+                root.style.setProperty('--widget-scale', urlParams.get('scale') || '1');
+
+                const layout = urlParams.get('layout') || 'compact';
+                const widgetEl = document.getElementById('widgetScreen');
+                widgetEl.classList.add(layout);
+                document.getElementById('widgetWrapper').classList.remove('hidden');
+
+                const qloc = urlParams.get('qloc') || 'bottom';
+                if (qloc === 'top') {
+                    document.getElementById('widgetWrapper').classList.add('queue-top');
+                } else {
+                    document.getElementById('widgetWrapper').classList.remove('queue-top');
+                }
+
+                if (layout === 'vinyl') {
+                    document.getElementById('liveVinylContainer').classList.remove('hidden');
+                    document.getElementById('albumArt').classList.add('hidden');
+                }
+
+                const queueVis = urlParams.get('qvis') || 'auto';
+                const queueContainer = document.getElementById('queueContainer');
+                if (queueContainer) {
+                    if (queueVis === 'hidden') {
+                        queueContainer.classList.add('queue-hidden');
+                    } else if (queueVis === 'enabled') {
+                        queueContainer.classList.remove('queue-hidden');
+                    } else {
+                        startQueueVisibilityCycle();
+                    }
+                }
+
+                const token = urlParams.get('token');
+                const refreshToken = urlParams.get('rtoken');
+                const clientId = urlParams.get('cid');
+                const rawChannel = urlParams.get('ch') || '';
+                const channel = rawChannel.replace(/^#/, '').trim().toLowerCase();
+
+                if (!token || !clientId || !channel) {
+                    document.getElementById('trackTitle').innerText = "Config Error";
+                    document.getElementById('trackArtist').innerText = "Please regenerate your link from the main page";
+                    return;
+                }
+
+                localStorage.setItem('sp_access_token', token);
+                localStorage.setItem('sp_refresh_token', refreshToken);
+                localStorage.setItem('sp_client_id', clientId);
+                localStorage.setItem('twitch_channel', channel);
+
+                startPlayerPolling();
+                connectTwitchChat();
+                return;
+            }
+
+            if (code) {
+                await exchangeCodeForToken(code);
+                window.history.replaceState({}, document.title, BASE_URL);
+            }
+
+            const savedClientId = localStorage.getItem('sp_client_id');
+            const savedChannel = localStorage.getItem('twitch_channel');
+            if (savedClientId) document.getElementById('clientIdInput').value = savedClientId;
+            if (savedChannel) document.getElementById('twitchChannelInput').value = savedChannel;
+
+            document.getElementById('setupScreen').classList.remove('hidden');
+            applyStylesAndLink();
+        };
+
+        function startQueueVisibilityCycle() {
+            if (autoQueueTimer) clearTimeout(autoQueueTimer);
+
+            const showSecs = parseInt(urlParams.get('qshow') || document.getElementById('queueShowTimeInput')?.value || '10') * 1000;
+            const hideSecs = parseInt(urlParams.get('qhide') || document.getElementById('queueHideTimeInput')?.value || '15') * 1000;
+
+            function scheduleHide() {
+                autoQueueTimer = setTimeout(() => {
+                    const queueEls = [document.getElementById('queueContainer'), document.getElementById('previewQueueContainer')];
+                    queueEls.forEach(el => { if (el) el.classList.add('queue-hidden'); });
+                    scheduleShow();
+                }, showSecs);
+            }
+
+            function scheduleShow() {
+                autoQueueTimer = setTimeout(() => {
+                    const queueEls = [document.getElementById('queueContainer'), document.getElementById('previewQueueContainer')];
+                    queueEls.forEach(el => { if (el) el.classList.remove('queue-hidden'); });
+                    scheduleHide();
+                }, hideSecs);
+            }
+
+            scheduleHide();
+        }
+
+        function applyStylesAndLink() {
+            const radius = document.getElementById('borderRadiusInput').value || '16px';
+            const bwidth = document.getElementById('borderWidthInput').value || '1px';
+            const bcolor = document.getElementById('borderColorInput').value || '#ffffff';
+            
+            const scalePercent = document.getElementById('widgetScaleInput').value || '100';
+            document.getElementById('scaleVal').innerText = scalePercent;
+            const scale = scalePercent / 100;
+
+            const bgColorHex = document.getElementById('bgColorPicker').value || '#121212';
+            const bgOpacity = document.getElementById('bgOpacityInput').value;
+            document.getElementById('opacityVal').innerText = bgOpacity;
+            const bgcolor = hexToRGBA(bgColorHex, bgOpacity / 100);
+
+            const tcolor = document.getElementById('textColorInput').value || '#ffffff';
+            const align = document.getElementById('textAlignInput').value || 'left';
+            const layout = document.getElementById('layoutModeInput').value || 'compact';
+            const queueVis = document.getElementById('queueVisibilityInput').value || 'auto';
+            const queueLoc = document.getElementById('queueLocationInput').value || 'bottom';
+            const queueShowTime = document.getElementById('queueShowTimeInput').value || '10';
+            const queueHideTime = document.getElementById('queueHideTimeInput').value || '15';
+            const skip = document.getElementById('enableSkipInput').value;
+            const skipPerm = document.getElementById('skipPermissionInput').value;
+
+            const cid = document.getElementById('clientIdInput').value.trim();
+            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
+
+            if (cid) localStorage.setItem('sp_client_id', cid);
+            if (channel) localStorage.setItem('twitch_channel', channel);
+
+            const previewWrapper = document.getElementById('previewWrapper');
+            previewWrapper.style.setProperty('--border-radius', radius);
+            previewWrapper.style.setProperty('--border-width', bwidth);
+            previewWrapper.style.setProperty('--border-color', hexToRGBA(bcolor, 0.2));
+            previewWrapper.style.setProperty('--bg-color', bgcolor);
+            previewWrapper.style.setProperty('--text-color', tcolor);
+            previewWrapper.style.setProperty('--text-align', align);
+            previewWrapper.style.setProperty('--widget-scale', scale);
+
+            if (queueLoc === 'top') {
+                previewWrapper.classList.add('queue-top');
+            } else {
+                previewWrapper.classList.remove('queue-top');
+            }
+
+            const previewQueue = document.getElementById('previewQueueContainer');
+            if (previewQueue) {
+                if (queueVis === 'hidden') {
+                    previewQueue.classList.add('queue-hidden');
+                } else if (queueVis === 'enabled') {
+                    previewQueue.classList.remove('queue-hidden');
+                } else {
+                    previewQueue.classList.remove('queue-hidden');
+                    startQueueVisibilityCycle();
+                }
+            }
+
+            const preview = document.getElementById('previewWidget');
+            preview.className = `widget-container ${layout}`;
+
+            const vinylContainer = document.getElementById('previewVinylContainer');
+            const standardArt = document.getElementById('previewAlbumArt');
+
+            vinylContainer.classList.add('hidden');
+            standardArt.classList.remove('hidden');
+            previewWrapper.classList.remove('is-playing');
+
+            if (layout === 'vinyl') {
+                vinylContainer.classList.remove('hidden');
+                standardArt.classList.add('hidden');
+                previewWrapper.classList.add('is-playing');
+            }
+
+            const token = localStorage.getItem('sp_access_token') || '';
+            const rtoken = localStorage.getItem('sp_refresh_token') || '';
+
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&qloc=${queueLoc}&qshow=${queueShowTime}&qhide=${queueHideTime}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            
+            document.getElementById('obsGeneratedLink').value = obsUrl;
+        }
+
+        function testSimulatePlaying() {
+            const wrapper = document.getElementById('previewWrapper');
+            wrapper.classList.remove('transparent-obs');
+            wrapper.classList.add('is-playing');
+            document.getElementById('previewTitle').innerText = "Song of Storms";
+            document.getElementById('previewArtist').innerText = "Koji Kondo • Ocarina of Time";
+            document.getElementById('previewStatus').innerText = "Playing Live in Studio";
+        }
+
+        function testSimulatePaused() {
+            const wrapper = document.getElementById('previewWrapper');
+            wrapper.classList.remove('is-playing');
+            document.getElementById('previewTitle').innerText = "Playback Paused / Inactive";
+            document.getElementById('previewArtist').innerText = "Hiding in 5 seconds...";
+            document.getElementById('previewStatus').innerText = "";
+        }
+
+        function testSimulateRequest() {
+            const wrapper = document.getElementById('previewWrapper');
+            wrapper.classList.remove('transparent-obs');
+            document.getElementById('previewStatus').innerText = "Requested by @HeroOfTime99";
+        }
+
+        async function saveSettingsAndAuth() {
+            const cid = document.getElementById('clientIdInput').value.trim();
+            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
+            if (!cid || !channel) return alert('Please fill in your Client ID and Twitch channel.');
+            
+            localStorage.setItem('sp_client_id', cid);
+            localStorage.setItem('twitch_channel', channel);
+            
+            const verifier = generateRandomString(64);
+            localStorage.setItem('sp_verifier', verifier);
+            const challenge = await sha256(verifier);
+
+            const scope = 'user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative';
+            const authUrl = new URL('https://accounts.spotify.com/authorize');
+            authUrl.searchParams.append('client_id', cid);
+            authUrl.searchParams.append('response_type', 'code');
+            authUrl.searchParams.append('redirect_uri', BASE_URL);
+            authUrl.searchParams.append('code_challenge_method', 'S256');
+            authUrl.searchParams.append('code_challenge', challenge);
+            authUrl.searchParams.append('scope', scope);
+
+            window.location.href = authUrl.toString();
+        }
+
+        async function exchangeCodeForToken(authCode) {
+            const clientId = localStorage.getItem('sp_client_id');
+            const verifier = localStorage.getItem('sp_verifier');
+
+            const response = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    client_id: clientId,
+                    grant_type: 'authorization_code',
+                    code: authCode,
+                    redirect_uri: BASE_URL,
+                    code_verifier: verifier,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.access_token) {
+                localStorage.setItem('sp_access_token', data.access_token);
+                if (data.refresh_token) localStorage.setItem('sp_refresh_token', data.refresh_token);
+            }
+        }
+
+        async function refreshAccessToken() {
+            const clientId = localStorage.getItem('sp_client_id');
+            const refreshToken = localStorage.getItem('sp_refresh_token');
+            if (!refreshToken) return false;
+
+            const response = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    client_id: clientId,
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.access_token) {
+                localStorage.setItem('sp_access_token', data.access_token);
+                if (data.refresh_token) localStorage.setItem('sp_refresh_token', data.refresh_token);
+                return true;
+            }
+            return false;
+        }
+
+        function startPlayerPolling() {
+            const layout = urlParams.get('layout') || 'compact';
+
+            setInterval(async () => {
+                let token = localStorage.getItem('sp_access_token');
+                
+                await fetchQueueList();
+
+                let res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.status === 401) {
+                    let refreshed = await refreshAccessToken();
+                    if (refreshed) {
+                        token = localStorage.getItem('sp_access_token');
+                        res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                    }
+                }
+
+                const wrapperEl = document.getElementById('widgetWrapper');
+
+                if (res.status === 204 || res.status > 300) {
+                    wrapperEl.classList.remove('is-playing');
+                    return;
+                }
+
+                let data = await res.json();
+                if (data && data.item) {
+                    wrapperEl.classList.remove('transparent-obs');
+                    wrapperEl.classList.add('is-playing');
+
+                    document.getElementById('trackTitle').innerText = data.item.name;
+                    document.getElementById('trackArtist').innerText = data.item.artists.map(a => a.name).join(', ');
+                    
+                    const imageUrl = data.item.album.images.length > 0 ? data.item.album.images[0].url : '';
+                    
+                    if (layout === 'vinyl') {
+                        const vinylArt = document.getElementById('liveVinylArt');
+                        if (vinylArt.src !== imageUrl) vinylArt.src = imageUrl;
+                    } else {
+                        const artEl = document.getElementById('albumArt');
+                        if (artEl.src !== imageUrl) artEl.src = imageUrl;
+                    }
+                    
+                    let progress = (data.progress_ms / data.item.duration_ms) * 100;
+                    document.getElementById('progressFill').style.width = `${progress}%`;
+                }
+            }, 3000);
+        }
+
+        async function fetchQueueList() {
+            let token = localStorage.getItem('sp_access_token');
+            let res = await fetch('https://api.spotify.com/v1/me/player/queue', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.status === 401) {
+                let refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    token = localStorage.getItem('sp_access_token');
+                    res = await fetch('https://api.spotify.com/v1/me/player/queue', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            }
+
+            if (res.ok) {
+                let data = await res.json();
+                let queueListEl = document.getElementById('queueItemsList');
+                if (!queueListEl) return;
+                
+                let upcoming = data.queue.slice(0, 5);
+
+                queueListEl.innerHTML = '';
+                if (upcoming.length === 0) {
+                    queueListEl.innerHTML = '<div style="color:var(--secondary-text); font-size:10px;">Queue is empty</div>';
+                    return;
+                }
+
+                upcoming.forEach(track => {
+                    let imgUrl = track.album.images.length > 0 ? track.album.images[track.album.images.length - 1].url : '';
+                    queueListEl.innerHTML += `
+                        <div class="queue-item">
+                            <img src="${imgUrl}" alt="Art">
+                            <div class="queue-item-info">
+                                <div style="font-weight:700; color:var(--text-color);">${track.name}</div>
+                                <div style="color:var(--secondary-text);">${track.artists.map(a => a.name).join(', ')}</div>
+                            </div>
+                        </div>`;
+                });
+            }
+        }
+
+        function connectTwitchChat() {
+            const channel = (localStorage.getItem('twitch_channel') || '').replace(/^#/, '').trim().toLowerCase();
+            console.log("Connecting to Twitch chat for channel:", channel);
+            const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+            ws.onopen = () => {
+                ws.send('CAP REQ :twitch.tv/tags :twitch.tv/commands');
+                ws.send('PASS SCHMOOPIIE');
+                ws.send('NICK justinfan' + Math.floor(Math.random() * 80000));
+                ws.send(`JOIN #${channel}`);
+                console.log(`Joined channel #${channel}`);
+            };
+
+            ws.onmessage = async (event) => {
+                const rawMessage = event.data;
+                if (rawMessage.includes('PRIVMSG')) {
+                    const parts = rawMessage.split(' PRIVMSG ');
+                    if (parts.length < 2) return;
+
+                    const tagsPart = parts[0];
+                    const rest = parts[1];
+                    const channelAndMsg = rest.split(' :');
+                    if (channelAndMsg.length < 2) return;
+
+                    const userPart = tagsPart.includes('@') ? tags
