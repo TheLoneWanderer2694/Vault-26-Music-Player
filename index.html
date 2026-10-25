@@ -3,40 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music</title>
+    <title>Spotify Live Overlay & Control Hub</title>
+    <!-- Tailwind CSS for sleek setup UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
         :root {
-            --bg-color: rgba(18, 18, 18, 0.75);
+            --bg-color: rgba(18, 18, 24, 0.85);
             --text-color: #ffffff;
-            --secondary-text: #b3b3b3;
-            --accent-color: #1db954;
-            --border-radius: 16px;
+            --secondary-text: #a1a1aa;
+            --accent-color: #1ed760;
+            --border-radius: 20px;
             --border-width: 1px;
-            --border-color: rgba(255, 255, 255, 0.1);
+            --border-color: rgba(255, 255, 255, 0.12);
             --text-align: left;
             --widget-scale: 1;
+            --glow-color: rgba(30, 215, 96, 0.2);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background: #0e0e10;
+            background: #09090b;
             color: var(--text-color);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
         }
 
         body.is-obs {
-            background: transparent;
+            background: transparent !important;
             justify-content: flex-start;
             align-items: flex-start;
             height: 100vh;
@@ -44,193 +50,146 @@
             padding: 0;
         }
 
-        .setup-container {
-            background: rgba(24, 24, 27, 0.9);
-            backdrop-filter: blur(12px);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 520px;
-            width: 100%;
-            text-align: left;
-            max-height: 95vh;
-            overflow-y: auto;
+        /* Custom Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
         }
-
-        .setup-container h2 { margin-bottom: 4px; }
-        .setup-container p { font-size: 12px; color: #b3b3b3; margin-bottom: 12px; }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        .setup-container label {
-            font-size: 10px;
-            font-weight: 600;
-            color: #b3b3b3;
-            display: block;
-            margin-bottom: 3px;
-            text-transform: uppercase;
-        }
-
-        .setup-container input[type="text"], 
-        .setup-container input[type="number"],
-        .setup-container input[type="range"], 
-        .setup-container select {
-            width: 100%;
-            padding: 6px 8px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            color: #fff;
-            font-size: 12px;
-        }
-
-        .setup-container input[type="color"] {
-            -webkit-appearance: none;
-            border: none;
-            width: 100%;
-            height: 30px;
-            border-radius: 6px;
-            cursor: pointer;
+        ::-webkit-scrollbar-track {
             background: transparent;
-            padding: 0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
         }
 
-        .setup-container input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
+        /* Custom Range Slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            outline: none;
         }
-
-        .setup-container input[type="color"]::-webkit-color-swatch {
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-        }
-
-        .row { display: flex; gap: 8px; }
-        .row .form-group { flex: 1; }
-
-        .setup-container button {
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
             background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
-            margin-top: 8px;
-            width: 100%;
-            font-size: 13px;
+            box-shadow: 0 0 10px var(--accent-color);
+            transition: transform 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
         }
 
-        .test-row { display: flex; gap: 6px; margin-top: 6px; }
-        .test-row button { background: #3f3f46; font-size: 11px; padding: 6px; margin-top: 0; }
-        .test-row button:hover { background: #52525b; }
-
-        .obs-link-box {
-            margin-top: 12px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            border: 1px dashed var(--accent-color);
+        /* Setup Card Glassmorphism */
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
-        .obs-link-box p { font-size: 11px; margin-bottom: 4px; color: #fff; }
-        .obs-link-box input { font-size: 11px; padding: 5px; cursor: pointer; }
-
-        .preview-label {
-            font-size: 11px;
-            font-weight: bold;
-            color: var(--accent-color);
-            margin-top: 12px;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        /* Animated Pulsing Status Dot */
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-color);
+            animation: pulse 2s infinite;
         }
 
-        /* --- WIDGET WRAPPER & STYLES --- */
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 215, 96, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(30, 215, 96, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 215, 96, 0); }
+        }
+
+        /* --- WIDGET CONTAINER & LAYOUTS --- */
         .widget-wrapper {
             position: relative;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            width: 350px;
+            gap: 12px;
+            width: 380px;
             max-width: 100%;
             opacity: 1;
             visibility: visible;
             transform: scale(var(--widget-scale));
-            transform-origin: top right;
-            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.2s ease-out;
+            transform-origin: top left;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease-out;
             overflow: visible;
         }
 
-        /* Dock to top right corner in OBS mode */
         body.is-obs .widget-wrapper {
-            margin-left: auto;
+            margin: 16px;
         }
 
         .widget-wrapper.queue-top {
             flex-direction: column-reverse;
         }
 
-        .widget-wrapper.transparent-obs {
-            opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
-        }
-
         .widget-container {
             background: var(--bg-color);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: var(--border-radius);
             border: var(--border-width) solid var(--border-color);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             text-align: var(--text-align);
             overflow: hidden;
             position: relative;
             width: 100%;
+            transition: all 0.3s ease;
         }
 
-        /* Layout: Compact */
+        /* Layout 1: Modern Compact Card */
         .widget-container.compact {
             display: flex;
             align-items: center;
             gap: 16px;
-            padding: 14px;
+            padding: 16px;
         }
 
         .widget-container.compact .album-art {
-            width: 65px;
-            height: 65px;
-            border-radius: calc(var(--border-radius) - 4px);
+            width: 72px;
+            height: 72px;
+            border-radius: calc(var(--border-radius) - 6px);
             object-fit: cover;
             flex-shrink: 0;
-            background: #333;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background: #18181b;
         }
 
         .widget-container.compact .track-info {
             flex-grow: 1;
-            overflow: hidden;
+            min-width: 0;
         }
 
-        /* Layout: Full Album Art Backdrop */
+        /* Layout 2: Full Art Backdrop */
         .widget-container.full-art {
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            height: 180px;
-            padding: 16px;
+            height: 200px;
+            padding: 20px;
             background-size: cover;
             background-position: center;
-            background-color: #222;
+            background-color: #18181b;
         }
 
         .widget-container.full-art::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.2) 100%);
+            background: linear-gradient(to top, rgba(9, 9, 11, 0.95) 15%, rgba(9, 9, 11, 0.3) 100%);
             z-index: 1;
         }
 
@@ -241,214 +200,202 @@
 
         .widget-container.full-art .album-art { display: none; }
 
-        /* Layout: Stacked Vertical */
+        /* Layout 3: Stacked Card */
         .widget-container.stacked {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 16px;
+            padding: 20px;
             text-align: center !important;
         }
 
         .widget-container.stacked .album-art {
-            width: 120px;
-            height: 120px;
-            border-radius: calc(var(--border-radius) - 4px);
+            width: 140px;
+            height: 140px;
+            border-radius: calc(var(--border-radius) - 6px);
             object-fit: cover;
-            margin-bottom: 12px;
-            background: #333;
+            margin-bottom: 14px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+            background: #18181b;
         }
 
         .widget-container.stacked .track-info {
             width: 100%;
-            overflow: hidden;
         }
 
-        /* Layout: Minimalist Text Only */
+        /* Layout 4: Minimalist Bar */
         .widget-container.minimalist {
             display: flex;
             flex-direction: column;
-            padding: 12px 18px;
+            padding: 14px 20px;
         }
 
         .widget-container.minimalist .album-art { display: none; }
-        .widget-container.minimalist .track-info { width: 100%; overflow: hidden; }
 
-        /* Layout: HUD / Floating Pill */
+        /* Layout 5: Floating Pill */
         .widget-container.pill {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 8px 14px;
-            border-radius: 50px;
+            padding: 10px 18px;
+            border-radius: 9999px;
             width: fit-content;
             max-width: 100%;
         }
 
         .widget-container.pill .album-art {
-            width: 38px;
-            height: 38px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             object-fit: cover;
             flex-shrink: 0;
-            background: #333;
+            background: #18181b;
         }
 
-        .widget-container.pill .track-info { overflow: hidden; }
         .widget-container.pill .progress-bar { display: none; }
 
-        /* Layout: Vinyl Record Spinner */
+        /* Layout 6: Vinyl Spinner 💿 */
         .widget-container.vinyl {
             display: flex;
             align-items: center;
             gap: 16px;
-            padding: 14px 18px;
-            border-radius: 50px;
+            padding: 16px;
+            border-radius: 9999px;
         }
 
         .widget-container.vinyl .vinyl-sleeve {
             position: relative;
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             flex-shrink: 0;
         }
 
         .widget-container.vinyl .album-art {
-            width: 55px;
-            height: 55px;
+            width: 58px;
+            height: 58px;
             border-radius: 50%;
             object-fit: cover;
             position: absolute;
-            top: 2.5px;
-            left: 2.5px;
+            top: 3px;
+            left: 3px;
             z-index: 2;
-            animation: spinVinyl 6s linear infinite;
+            animation: spinVinyl 8s linear infinite;
             animation-play-state: paused;
+            border: 2px solid rgba(255,255,255,0.1);
         }
 
-        .widget-wrapper.is-playing .vinyl-container .album-art { animation-play-state: running; }
+        .widget-wrapper.is-playing .vinyl-sleeve .album-art { animation-play-state: running; }
 
         .widget-container.vinyl .vinyl-record-grooves {
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             background: repeating-radial-gradient(#111, #111 3px, #222 4px, #111 5px);
             border-radius: 50%;
             position: absolute;
             top: 0;
             left: 0;
             z-index: 1;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
         }
-
-        .widget-container.vinyl .track-info { flex-grow: 1; overflow: hidden; }
 
         @keyframes spinVinyl {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
-        /* Layout: Legend of Zelda Retro Theme 🛡️ */
+        /* Layout 7: Retro Zelda Theme 🛡️ */
         .widget-container.zelda {
             display: flex;
             align-items: center;
             gap: 14px;
-            padding: 14px;
-            background: linear-gradient(135deg, rgba(20, 45, 25, 0.95), rgba(10, 25, 15, 0.95)) !important;
-            border: 3px solid #d4af37 !important;
-            border-radius: 8px !important;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 8px 25px rgba(0,0,0,0.6) !important;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(16, 42, 23, 0.95), rgba(7, 20, 11, 0.98)) !important;
+            border: 2px solid #d4af37 !important;
+            border-radius: 12px !important;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.7) !important;
         }
 
         .widget-container.zelda .album-art {
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             border: 2px solid #d4af37;
-            border-radius: 4px;
+            border-radius: 6px;
             object-fit: cover;
             flex-shrink: 0;
         }
 
-        .widget-container.zelda .track-info { flex-grow: 1; overflow: hidden; }
-        .widget-container.zelda .track-title { font-family: 'Georgia', serif; color: #f3e5ab; text-shadow: 1px 1px #000; }
-        .widget-container.zelda .track-artist { font-family: 'Georgia', serif; color: #98fb98; }
-        .widget-container.zelda .progress-fill { background: #d4af37; }
-        .widget-container.zelda .request-status { color: #f0e68c; }
+        .widget-container.zelda .track-title { font-family: 'Georgia', serif; color: #fef08a; text-shadow: 1px 1px 2px #000; }
+        .widget-container.zelda .track-artist { font-family: 'Georgia', serif; color: #86efac; }
+        .widget-container.zelda .progress-fill { background: #eab308; box-shadow: 0 0 8px #eab308; }
+        .widget-container.zelda .request-status { color: #fef08a; }
 
-        /* Queue List Panel 🎶 (Enlarged Height for many songs) */
+        /* --- QUEUE LIST PANEL (SUPER SIZED HEIGHT) --- */
         .queue-container {
-            position: absolute;
-            left: 0;
             width: 100%;
-            max-height: 65vh;
+            max-height: 65vh; /* Generous expanded height */
             overflow-y: auto;
-            scrollbar-width: none; /* Hide scrollbar for Firefox */
             background: var(--bg-color);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: var(--border-radius);
             border: var(--border-width) solid var(--border-color);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             display: flex;
             flex-direction: column;
-            padding: 12px 16px;
+            padding: 16px 18px;
             z-index: 10;
             opacity: 1;
             visibility: visible;
-            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out, transform 0.4s ease-in-out;
-        }
-
-        /* Hide scrollbar for Chrome, Safari, and OBS */
-        .queue-container::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* Dynamic Queue Position Styling */
-        .widget-wrapper:not(.queue-top) .queue-container {
-            top: calc(100% + 8px);
-            bottom: auto;
-        }
-
-        .widget-wrapper.queue-top .queue-container {
-            bottom: calc(100% + 8px);
-            top: auto;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .queue-container.queue-hidden {
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
-            transform: translateY(6px);
+            transform: translateY(8px);
         }
 
         .queue-header {
-            font-size: 10px;
-            font-weight: bold;
+            font-size: 11px;
+            font-weight: 800;
             color: var(--accent-color);
-            margin-bottom: 6px;
+            margin-bottom: 12px;
             text-transform: uppercase;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 4px;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 8px;
         }
 
         .queue-items {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 10px;
         }
 
         .queue-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 11px;
-            width: 100%;
+            gap: 12px;
+            font-size: 12px;
+            padding: 6px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s ease;
+        }
+
+        .queue-item:hover {
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .queue-item img {
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
             object-fit: cover;
             flex-shrink: 0;
         }
@@ -460,240 +407,249 @@
             width: 100%;
         }
 
-        /* Typography */
-        .track-title-wrapper, .track-artist-wrapper {
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
+        /* Typography & Progress Elements */
         .track-title {
             font-size: 15px;
             font-weight: 700;
             color: var(--text-color);
-            display: inline-block;
             margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
             text-overflow: ellipsis;
+            letter-spacing: -0.2px;
         }
 
         .track-artist {
             font-size: 12px;
+            font-weight: 500;
             color: var(--secondary-text);
-            display: inline-block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .request-status {
-            font-size: 10px;
+            font-size: 11px;
+            font-weight: 600;
             color: var(--accent-color);
-            font-style: italic;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 3px;
-            min-height: 14px;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 16px;
         }
 
         .progress-bar {
             width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
             overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
             background: var(--accent-color);
+            border-radius: 999px;
             width: 45%;
+            box-shadow: 0 0 10px var(--glow-color);
+            transition: width 0.3s linear;
         }
-
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- Setup Screen (Configurator) -->
-    <div id="setupScreen" class="setup-container">
-        <h2>Spotify Widget Studio</h2>
-        <p>Advanced Customization & Live Simulation Studio</p>
-        
-        <div class="row">
-            <div class="form-group">
-                <label>Spotify Client ID</label>
-                <input type="text" id="clientIdInput" placeholder="Client ID" oninput="applyStylesAndLink()">
+    <!-- SETUP & CONFIGURATION STUDIO INTERFACE -->
+    <div id="setupScreen" class="glass-panel rounded-3xl p-6 sm:p-8 max-w-2xl w-full my-6 max-h-[92vh] overflow-y-auto relative z-20">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-white/10 pb-5 mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
+                    <i class="fa-brands fa-spotify"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">Spotify Overlay Studio</h1>
+                    <p class="text-xs text-zinc-400">Stream overlay customizer & Twitch chatbot manager</p>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Twitch Channel</label>
-                <input type="text" id="twitchChannelInput" placeholder="Channel name (no #)" oninput="applyStylesAndLink()">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="form-group">
-                <label>Layout Mode</label>
-                <select id="layoutModeInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
-                    <option value="compact">Compact (Side Art)</option>
-                    <option value="full-art">Full Album Art Backdrop</option>
-                    <option value="stacked">Stacked / Vertical</option>
-                    <option value="minimalist">Minimalist (Text Only)</option>
-                    <option value="pill">HUD / Floating Pill</option>
-                    <option value="vinyl">Vinyl Record Spinner 💿</option>
-                    <option value="zelda">Legend of Zelda Theme 🛡️</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Text Alignment</label>
-                <select id="textAlignInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                </select>
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                <div class="pulse-dot"></div>
+                Live Engine Ready
             </div>
         </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Queue Visibility</label>
-                <select id="queueVisibilityInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
-                    <option value="auto">Auto Cycle (Fade In/Out)</option>
+        <!-- Inputs Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Spotify Client ID</label>
+                <input type="text" id="clientIdInput" placeholder="Enter Spotify App Client ID" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" oninput="applyStylesAndLink()">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Twitch Channel</label>
+                <input type="text" id="twitchChannelInput" placeholder="Twitch username" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" oninput="applyStylesAndLink()">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Widget Theme Layout</label>
+                <select id="layoutModeInput" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" onchange="applyStylesAndLink()">
+                    <option value="compact">Modern Compact (Classic Side Art)</option>
+                    <option value="full-art">Full Album Backdrop</option>
+                    <option value="stacked">Vertical Card Stack</option>
+                    <option value="minimalist">Minimalist Text Bar</option>
+                    <option value="pill">Floating Pill HUD</option>
+                    <option value="vinyl">Spinning Vinyl Record 💿</option>
+                    <option value="zelda">Legend of Zelda Retro 🛡️</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Text Alignment</label>
+                <select id="textAlignInput" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" onchange="applyStylesAndLink()">
+                    <option value="left">Left Aligned</option>
+                    <option value="center">Centered</option>
+                    <option value="right">Right Aligned</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Queue Display Mode</label>
+                <select id="queueVisibilityInput" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" onchange="applyStylesAndLink()">
+                    <option value="auto">Auto-Cycle (Fade In/Out)</option>
                     <option value="enabled">Always Visible</option>
                     <option value="hidden">Always Hidden</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Queue Location</label>
-                <select id="queueLocationInput" oninput="applyStylesAndLink()" onchange="applyStylesAndLink()">
-                    <option value="bottom">Bottom (Below Widget)</option>
-                    <option value="top">Top (Above Widget)</option>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Queue Position</label>
+                <select id="queueLocationInput" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" onchange="applyStylesAndLink()">
+                    <option value="bottom">Below Widget</option>
+                    <option value="top">Above Widget</option>
                 </select>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Queue Visible Time (Sec)</label>
-                <input type="number" id="queueShowTimeInput" min="2" max="120" value="10" oninput="applyStylesAndLink()">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Queue Visible Duration (Sec)</label>
+                <input type="number" id="queueShowTimeInput" min="2" max="120" value="10" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Queue Hidden Time (Sec)</label>
-                <input type="number" id="queueHideTimeInput" min="2" max="300" value="15" oninput="applyStylesAndLink()">
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Widget Scale (<span id="scaleVal">100</span>%)</label>
-                <input type="range" id="widgetScaleInput" min="50" max="200" step="5" value="100" oninput="applyStylesAndLink()">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Queue Hidden Duration (Sec)</label>
+                <input type="number" id="queueHideTimeInput" min="2" max="300" value="15" class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Enable Skip Command (!skip)</label>
-                <select id="enableSkipInput" oninput="applyStylesAndLink()">
-                    <option value="yes">Allowed</option>
-                    <option value="no">Disabled</option>
-                </select>
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Skip Permission</label>
-                <select id="skipPermissionInput" oninput="applyStylesAndLink()">
-                    <option value="mod">Moderators & VIPs Only</option>
-                    <option value="everyone">Everyone (Public)</option>
-                </select>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Widget Scale (<span id="scaleVal">100</span>%)</label>
+                <input type="range" id="widgetScaleInput" min="50" max="180" step="5" value="100" class="w-full py-2" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Border Radius</label>
-                <input type="text" id="borderRadiusInput" value="16px" oninput="applyStylesAndLink()">
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Border Width</label>
-                <input type="text" id="borderWidthInput" value="1px" oninput="applyStylesAndLink()">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Background Opacity (<span id="opacityVal">85</span>%)</label>
+                <input type="range" id="bgOpacityInput" min="0" max="100" value="85" class="w-full py-2" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Border Color</label>
-                <input type="color" id="borderColorInput" value="#ffffff" oninput="applyStylesAndLink()">
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Background Color Picker</label>
-                <input type="color" id="bgColorPicker" value="#121212" oninput="applyStylesAndLink()">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Background Color</label>
+                <input type="color" id="bgColorPicker" value="#121218" class="w-full h-9 rounded-xl border border-white/10 bg-transparent cursor-pointer" oninput="applyStylesAndLink()">
             </div>
-            <div class="form-group">
-                <label>Background Opacity (<span id="opacityVal">75</span>%)</label>
-                <input type="range" id="bgOpacityInput" min="0" max="100" value="75" oninput="applyStylesAndLink()">
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group">
-                <label>Text Color</label>
-                <input type="color" id="textColorInput" value="#ffffff" oninput="applyStylesAndLink()">
-            </div>
-        </div>
-
-        <div class="preview-label">Live Preview & Test Controls</div>
-        
-        <!-- Configurator Live Preview Widget Wrapper -->
-        <div id="previewWrapper" class="widget-wrapper">
-            <div id="previewWidget" class="widget-container compact">
-                <div id="previewVinylContainer" class="vinyl-sleeve hidden">
-                    <div class="vinyl-record-grooves"></div>
-                    <img id="previewVinylArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
-                </div>
-                <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150&auto=format&fit=crop&q=80" alt="Album Art">
-                <div class="track-info">
-                    <div class="track-title-wrapper"><div id="previewTitle" class="track-title">Sample Song Title</div></div>
-                    <div class="track-artist-wrapper"><div id="previewArtist" class="track-artist">Artist Name • Album Name</div></div>
-                    <div id="previewProgressBar" class="progress-bar">
-                        <div class="progress-fill" style="width: 65%;"></div>
-                    </div>
-                    <div id="previewStatus" class="request-status">Requested by @Viewer123</div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Text & Accent Colors</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="color" id="textColorInput" value="#ffffff" title="Text Color" class="w-full h-9 rounded-xl border border-white/10 bg-transparent cursor-pointer" oninput="applyStylesAndLink()">
+                    <input type="color" id="accentColorInput" value="#1ed760" title="Accent Color" class="w-full h-9 rounded-xl border border-white/10 bg-transparent cursor-pointer" oninput="applyStylesAndLink()">
                 </div>
             </div>
-            <div id="previewQueueContainer" class="queue-container">
-                <div class="queue-header">Upcoming Queue</div>
-                <div class="queue-items">
-                    <div class="queue-item">
-                        <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&auto=format&fit=crop&q=80" alt="Art">
-                        <div class="queue-item-info">
-                            <div style="font-weight:700;">Sample Queue Track 1</div>
-                            <div style="color:var(--secondary-text);">Sample Artist 1</div>
+        </div>
+
+        <!-- Live Interactive Preview Panel -->
+        <div class="border-t border-white/10 pt-5 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-eye"></i> Studio Live Preview
+                </span>
+                <span class="text-[10px] text-zinc-400">Updates in real-time</span>
+            </div>
+
+            <div class="p-6 bg-zinc-950/60 rounded-2xl border border-white/5 flex items-center justify-center overflow-hidden">
+                <div id="previewWrapper" class="widget-wrapper">
+                    <div id="previewWidget" class="widget-container compact">
+                        <div id="previewVinylContainer" class="vinyl-sleeve hidden">
+                            <div class="vinyl-record-grooves"></div>
+                            <img id="previewVinylArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&auto=format&fit=crop&q=80" alt="Album Art">
+                        </div>
+                        <img id="previewAlbumArt" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&auto=format&fit=crop&q=80" alt="Album Art">
+                        <div class="track-info">
+                            <div class="track-title" id="previewTitle">Midnight City</div>
+                            <div class="track-artist" id="previewArtist">M83 • Hurry Up, We're Dreaming</div>
+                            <div id="previewProgressBar" class="progress-bar">
+                                <div class="progress-fill" style="width: 65%;"></div>
+                            </div>
+                            <div id="previewStatus" class="request-status"><i class="fa-solid fa-heart"></i> Requested by @SynthWaveFan</div>
                         </div>
                     </div>
-                    <div class="queue-item">
-                        <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&auto=format&fit=crop&q=80" alt="Art">
-                        <div class="queue-item-info">
-                            <div style="font-weight:700;">Sample Queue Track 2</div>
-                            <div style="color:var(--secondary-text);">Sample Artist 2</div>
+
+                    <!-- Enriched Queue Panel -->
+                    <div id="previewQueueContainer" class="queue-container">
+                        <div class="queue-header">
+                            <span><i class="fa-solid fa-list-ul mr-1.5"></i> Up Next in Queue</span>
+                            <span class="text-[10px] text-zinc-400">3 Tracks</span>
+                        </div>
+                        <div class="queue-items">
+                            <div class="queue-item">
+                                <img src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=100&auto=format&fit=crop&q=80" alt="Art">
+                                <div class="queue-item-info">
+                                    <div style="font-weight:700; color:var(--text-color);">Starboy</div>
+                                    <div style="color:var(--secondary-text);">The Weeknd</div>
+                                </div>
+                            </div>
+                            <div class="queue-item">
+                                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&auto=format&fit=crop&q=80" alt="Art">
+                                <div class="queue-item-info">
+                                    <div style="font-weight:700; color:var(--text-color);">Blinding Lights</div>
+                                    <div style="color:var(--secondary-text);">The Weeknd</div>
+                                </div>
+                            </div>
+                            <div class="queue-item">
+                                <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100&auto=format&fit=crop&q=80" alt="Art">
+                                <div class="queue-item-info">
+                                    <div style="font-weight:700; color:var(--text-color);">Resonance</div>
+                                    <div style="color:var(--secondary-text);">HOME</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Testing controls -->
+            <div class="grid grid-cols-3 gap-2 mt-4">
+                <button type="button" onclick="testSimulatePlaying()" class="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-xl text-white transition-all"><i class="fa-solid fa-play mr-1.5 text-emerald-400"></i> Sim Playing</button>
+                <button type="button" onclick="testSimulatePaused()" class="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-xl text-white transition-all"><i class="fa-solid fa-pause mr-1.5 text-amber-400"></i> Sim Paused</button>
+                <button type="button" onclick="testSimulateRequest()" class="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-xl text-white transition-all"><i class="fa-solid fa-comment mr-1.5 text-blue-400"></i> Test !sr Trigger</button>
+            </div>
         </div>
 
-        <div class="test-row">
-            <button type="button" onclick="testSimulatePlaying()">▶ Test Playing</button>
-            <button type="button" onclick="testSimulatePaused()">⏸ Test Paused</button>
-            <button type="button" onclick="testSimulateRequest()">💬 Test !sr Popups</button>
-        </div>
+        <!-- Action Button & OBS URL Copy Box -->
+        <button type="button" onclick="saveSettingsAndAuth()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-500/20 mb-4 flex items-center justify-center gap-2">
+            <i class="fa-brands fa-spotify text-lg"></i> Authenticate & Sync Spotify Account
+        </button>
 
-        <button type="button" onclick="saveSettingsAndAuth()" style="margin-top: 10px;">Re-Authorize Spotify</button>
-
-        <div id="linkBox" class="obs-link-box">
-            <p><strong>Copy this OBS Browser Source Link:</strong></p>
-            <input type="text" id="obsGeneratedLink" readonly onclick="this.select()">
+        <div class="p-4 bg-zinc-950/80 rounded-2xl border border-emerald-500/30">
+            <label class="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1.5">
+                <i class="fa-solid fa-link mr-1"></i> OBS Browser Source URL
+            </label>
+            <div class="flex gap-2">
+                <input type="text" id="obsGeneratedLink" readonly onclick="this.select()" class="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-300 font-mono">
+                <button type="button" onclick="copyObsUrl()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Live OBS Widget Wrapper -->
+    <!-- LIVE OVERLAY WIDGET DISPLAYED IN OBS BROWSER SOURCE -->
     <div id="widgetWrapper" class="widget-wrapper hidden">
         <div id="widgetScreen" class="widget-container">
             <div id="liveVinylContainer" class="vinyl-sleeve hidden">
@@ -702,16 +658,19 @@
             </div>
             <img id="albumArt" class="album-art" src="" alt="Album Art">
             <div class="track-info">
-                <div class="track-title-wrapper"><div id="trackTitle" class="track-title">Not Playing</div></div>
-                <div class="track-artist-wrapper"><div id="trackArtist" class="track-artist">Open Spotify to start</div></div>
+                <div id="trackTitle" class="track-title">Not Playing</div>
+                <div id="trackArtist" class="track-artist">Open Spotify to start music</div>
                 <div id="obsProgressBar" class="progress-bar">
                     <div id="progressFill" class="progress-fill"></div>
                 </div>
                 <div id="requestStatus" class="request-status"></div>
             </div>
         </div>
+        <!-- Live Queue Window -->
         <div id="queueContainer" class="queue-container">
-            <div class="queue-header">Upcoming Queue</div>
+            <div class="queue-header">
+                <span><i class="fa-solid fa-list-ul mr-1.5"></i> Up Next in Queue</span>
+            </div>
             <div id="queueItemsList" class="queue-items"></div>
         </div>
     </div>
@@ -729,12 +688,13 @@
                 document.getElementById('setupScreen').classList.add('hidden');
                 
                 const root = document.documentElement;
-                root.style.setProperty('--border-radius', urlParams.get('radius') || '16px');
+                root.style.setProperty('--border-radius', urlParams.get('radius') || '20px');
                 root.style.setProperty('--border-width', urlParams.get('bwidth') || '1px');
-                root.style.setProperty('--border-color', hexToRGBA(urlParams.get('bcolor') || '#ffffff', 0.2));
-                root.style.setProperty('--bg-color', urlParams.get('bgcolor') || 'rgba(18, 18, 18, 0.75)');
+                root.style.setProperty('--border-color', hexToRGBA(urlParams.get('bcolor') || '#ffffff', 0.12));
+                root.style.setProperty('--bg-color', urlParams.get('bgcolor') || 'rgba(18, 18, 24, 0.85)');
                 root.style.setProperty('--text-color', urlParams.get('tcolor') || '#ffffff');
-                root.style.setProperty('--secondary-text', urlParams.get('stcolor') || '#b3b3b3');
+                root.style.setProperty('--accent-color', urlParams.get('acolor') || '#1ed760');
+                root.style.setProperty('--glow-color', hexToRGBA(urlParams.get('acolor') || '#1ed760', 0.25));
                 root.style.setProperty('--text-align', urlParams.get('align') || 'left');
                 root.style.setProperty('--widget-scale', urlParams.get('scale') || '1');
 
@@ -746,8 +706,6 @@
                 const qloc = urlParams.get('qloc') || 'bottom';
                 if (qloc === 'top') {
                     document.getElementById('widgetWrapper').classList.add('queue-top');
-                } else {
-                    document.getElementById('widgetWrapper').classList.remove('queue-top');
                 }
 
                 if (layout === 'vinyl') {
@@ -773,19 +731,19 @@
                 const rawChannel = urlParams.get('ch') || '';
                 const channel = rawChannel.replace(/^#/, '').trim().toLowerCase();
 
-                if (!token || !clientId || !channel) {
-                    document.getElementById('trackTitle').innerText = "Config Error";
-                    document.getElementById('trackArtist').innerText = "Please regenerate your link from the main page";
+                if (!token || !clientId) {
+                    document.getElementById('trackTitle').innerText = "Configuration Required";
+                    document.getElementById('trackArtist').innerText = "Please copy link from the Studio editor";
                     return;
                 }
 
                 localStorage.setItem('sp_access_token', token);
                 localStorage.setItem('sp_refresh_token', refreshToken);
                 localStorage.setItem('sp_client_id', clientId);
-                localStorage.setItem('twitch_channel', channel);
+                if (channel) localStorage.setItem('twitch_channel', channel);
 
                 startPlayerPolling();
-                connectTwitchChat();
+                if (channel) connectTwitchChat();
                 return;
             }
 
@@ -829,28 +787,23 @@
         }
 
         function applyStylesAndLink() {
-            const radius = document.getElementById('borderRadiusInput').value || '16px';
-            const bwidth = document.getElementById('borderWidthInput').value || '1px';
-            const bcolor = document.getElementById('borderColorInput').value || '#ffffff';
-            
             const scalePercent = document.getElementById('widgetScaleInput').value || '100';
             document.getElementById('scaleVal').innerText = scalePercent;
             const scale = scalePercent / 100;
 
-            const bgColorHex = document.getElementById('bgColorPicker').value || '#121212';
-            const bgOpacity = document.getElementById('bgOpacityInput').value;
+            const bgColorHex = document.getElementById('bgColorPicker').value || '#121218';
+            const bgOpacity = document.getElementById('bgOpacityInput').value || '85';
             document.getElementById('opacityVal').innerText = bgOpacity;
             const bgcolor = hexToRGBA(bgColorHex, bgOpacity / 100);
 
             const tcolor = document.getElementById('textColorInput').value || '#ffffff';
+            const acolor = document.getElementById('accentColorInput').value || '#1ed760';
             const align = document.getElementById('textAlignInput').value || 'left';
             const layout = document.getElementById('layoutModeInput').value || 'compact';
             const queueVis = document.getElementById('queueVisibilityInput').value || 'auto';
             const queueLoc = document.getElementById('queueLocationInput').value || 'bottom';
             const queueShowTime = document.getElementById('queueShowTimeInput').value || '10';
             const queueHideTime = document.getElementById('queueHideTimeInput').value || '15';
-            const skip = document.getElementById('enableSkipInput').value;
-            const skipPerm = document.getElementById('skipPermissionInput').value;
 
             const cid = document.getElementById('clientIdInput').value.trim();
             const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
@@ -859,11 +812,10 @@
             if (channel) localStorage.setItem('twitch_channel', channel);
 
             const previewWrapper = document.getElementById('previewWrapper');
-            previewWrapper.style.setProperty('--border-radius', radius);
-            previewWrapper.style.setProperty('--border-width', bwidth);
-            previewWrapper.style.setProperty('--border-color', hexToRGBA(bcolor, 0.2));
             previewWrapper.style.setProperty('--bg-color', bgcolor);
             previewWrapper.style.setProperty('--text-color', tcolor);
+            previewWrapper.style.setProperty('--accent-color', acolor);
+            previewWrapper.style.setProperty('--glow-color', hexToRGBA(acolor, 0.3));
             previewWrapper.style.setProperty('--text-align', align);
             previewWrapper.style.setProperty('--widget-scale', scale);
 
@@ -877,11 +829,8 @@
             if (previewQueue) {
                 if (queueVis === 'hidden') {
                     previewQueue.classList.add('queue-hidden');
-                } else if (queueVis === 'enabled') {
-                    previewQueue.classList.remove('queue-hidden');
                 } else {
                     previewQueue.classList.remove('queue-hidden');
-                    startQueueVisibilityCycle();
                 }
             }
 
@@ -904,41 +853,43 @@
             const token = localStorage.getItem('sp_access_token') || '';
             const rtoken = localStorage.getItem('sp_refresh_token') || '';
 
-            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&skip=${skip}&skipPerm=${skipPerm}&qvis=${queueVis}&qloc=${queueLoc}&qshow=${queueShowTime}&qhide=${queueHideTime}&radius=${encodeURIComponent(radius)}&bwidth=${encodeURIComponent(bwidth)}&bcolor=${encodeURIComponent(bcolor)}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
+            const obsUrl = `${BASE_URL}?obs=true&layout=${layout}&align=${align}&scale=${scale}&qvis=${queueVis}&qloc=${queueLoc}&qshow=${queueShowTime}&qhide=${queueHideTime}&bgcolor=${encodeURIComponent(bgcolor)}&tcolor=${encodeURIComponent(tcolor)}&acolor=${encodeURIComponent(acolor)}&token=${encodeURIComponent(token)}&rtoken=${encodeURIComponent(rtoken)}&cid=${encodeURIComponent(cid || '')}&ch=${encodeURIComponent(channel || '')}`;
             
             document.getElementById('obsGeneratedLink').value = obsUrl;
         }
 
+        function copyObsUrl() {
+            const input = document.getElementById('obsGeneratedLink');
+            input.select();
+            document.execCommand('copy');
+            alert("OBS Browser Source URL copied to clipboard!");
+        }
+
         function testSimulatePlaying() {
             const wrapper = document.getElementById('previewWrapper');
-            wrapper.classList.remove('transparent-obs');
             wrapper.classList.add('is-playing');
-            document.getElementById('previewTitle').innerText = "Song of Storms";
-            document.getElementById('previewArtist').innerText = "Koji Kondo • Ocarina of Time";
-            document.getElementById('previewStatus').innerText = "Playing Live in Studio";
+            document.getElementById('previewTitle').innerText = "Blinding Lights";
+            document.getElementById('previewArtist').innerText = "The Weeknd • After Hours";
+            document.getElementById('previewStatus').innerHTML = '<i class="fa-solid fa-play"></i> Now Playing';
         }
 
         function testSimulatePaused() {
             const wrapper = document.getElementById('previewWrapper');
             wrapper.classList.remove('is-playing');
-            document.getElementById('previewTitle').innerText = "Playback Paused / Inactive";
-            document.getElementById('previewArtist').innerText = "Hiding in 5 seconds...";
+            document.getElementById('previewTitle').innerText = "Playback Paused";
+            document.getElementById('previewArtist').innerText = "Spotify player paused";
             document.getElementById('previewStatus').innerText = "";
         }
 
         function testSimulateRequest() {
-            const wrapper = document.getElementById('previewWrapper');
-            wrapper.classList.remove('transparent-obs');
-            document.getElementById('previewStatus').innerText = "Requested by @HeroOfTime99";
+            document.getElementById('previewStatus').innerHTML = '<i class="fa-solid fa-heart"></i> Requested by @StreamFan99';
         }
 
         async function saveSettingsAndAuth() {
             const cid = document.getElementById('clientIdInput').value.trim();
-            const channel = document.getElementById('twitchChannelInput').value.trim().toLowerCase().replace(/^#/, '');
-            if (!cid || !channel) return alert('Please fill in your Client ID and Twitch channel.');
+            if (!cid) return alert('Please enter your Spotify Client ID first.');
             
             localStorage.setItem('sp_client_id', cid);
-            localStorage.setItem('twitch_channel', channel);
             
             const verifier = generateRandomString(64);
             localStorage.setItem('sp_verifier', verifier);
@@ -1034,7 +985,6 @@
 
                 let data = await res.json();
                 if (data && data.item) {
-                    wrapperEl.classList.remove('transparent-obs');
                     wrapperEl.classList.add('is-playing');
 
                     document.getElementById('trackTitle').innerText = data.item.name;
@@ -1045,6 +995,8 @@
                     if (layout === 'vinyl') {
                         const vinylArt = document.getElementById('liveVinylArt');
                         if (vinylArt.src !== imageUrl) vinylArt.src = imageUrl;
+                    } else if (layout === 'full-art') {
+                        document.getElementById('widgetScreen').style.backgroundImage = `url('${imageUrl}')`;
                     } else {
                         const artEl = document.getElementById('albumArt');
                         if (artEl.src !== imageUrl) artEl.src = imageUrl;
@@ -1081,7 +1033,7 @@
 
                 queueListEl.innerHTML = '';
                 if (upcoming.length === 0) {
-                    queueListEl.innerHTML = '<div style="color:var(--secondary-text); font-size:10px;">Queue is empty</div>';
+                    queueListEl.innerHTML = '<div style="color:var(--secondary-text); font-size:11px;">Queue is currently empty</div>';
                     return;
                 }
 
@@ -1101,7 +1053,8 @@
 
         function connectTwitchChat() {
             const channel = (localStorage.getItem('twitch_channel') || '').replace(/^#/, '').trim().toLowerCase();
-            console.log("Connecting to Twitch chat for channel:", channel);
+            if (!channel) return;
+            
             const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
             ws.onopen = () => {
@@ -1109,7 +1062,6 @@
                 ws.send('PASS SCHMOOPIIE');
                 ws.send('NICK justinfan' + Math.floor(Math.random() * 80000));
                 ws.send(`JOIN #${channel}`);
-                console.log(`Joined channel #${channel}`);
             };
 
             ws.onmessage = async (event) => {
@@ -1123,42 +1075,26 @@
                     const channelAndMsg = rest.split(' :');
                     if (channelAndMsg.length < 2) return;
 
-                    const userPart = tagsPart.includes('@') ? tagsPart.split('USER=')[0] : tagsPart;
                     let user = "Viewer";
-                    if (userPart.includes('!')) {
-                        user = userPart.substring(userPart.lastIndexOf(':') + 1, userPart.indexOf('!'));
+                    if (tagsPart.includes('display-name=')) {
+                        user = tagsPart.split('display-name=')[1].split(';')[0];
                     }
 
                     const message = channelAndMsg.slice(1).join(' :').trim();
-                    const isModOrVip = tagsPart.includes('moderator/1') || tagsPart.includes('vip/1') || tagsPart.includes('broadcaster/1') || tagsPart.toLowerCase().includes('badges=broadcaster') || tagsPart.toLowerCase().includes('mod=1');
 
                     if (message.startsWith('!sr ') || message.startsWith('!request ')) {
                         const query = message.substring(message.indexOf(' ') + 1).trim();
-                        await searchAndQueueSong(query);
-                    } else if (message === '!skip' && urlParams.get('skip') !== 'no') {
-                        const requireMod = urlParams.get('skipPerm') !== 'everyone';
-                        if (!requireMod || isModOrVip) {
-                            await skipCurrentTrack();
-                        } else {
-                            showRequestStatus(`@${user}: !skip requires Mod/VIP`);
-                        }
-                    } else if (message === '!clear') {
-                        if (isModOrVip) {
-                            await clearQueue();
-                        } else {
-                            showRequestStatus(`@${user}: !clear requires Mod/VIP`);
-                        }
+                        await searchAndQueueSong(query, user);
                     }
                 }
             };
 
             ws.onclose = () => {
-                console.log("Twitch WS closed. Reconnecting in 5s...");
                 setTimeout(connectTwitchChat, 5000);
             };
         }
 
-        async function searchAndQueueSong(query) {
+        async function searchAndQueueSong(query, username) {
             let token = localStorage.getItem('sp_access_token');
             let searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -1173,67 +1109,22 @@
                 });
 
                 if (queueRes.ok || queueRes.status === 204) {
-                    showRequestStatus(`Added: ${trackName}`);
+                    showRequestStatus(`<i class="fa-solid fa-plus"></i> Queued: ${trackName} (@${username})`);
                     await fetchQueueList();
                 } else {
-                    let errData = await queueRes.json().catch(() => ({}));
-                    console.error("Spotify Queue Error:", errData);
-                    showRequestStatus("Error: Open Spotify & play a song first!");
+                    showRequestStatus("Error adding to queue");
                 }
             } else {
                 showRequestStatus(`Track not found`);
             }
         }
 
-        async function skipCurrentTrack() {
-            let token = localStorage.getItem('sp_access_token');
-            let res = await fetch('https://api.spotify.com/v1/me/player/next', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok || res.status === 204) {
-                showRequestStatus("Skipped track via command");
-            } else {
-                showRequestStatus("Error: No active Spotify device!");
-            }
-        }
-
-        async function clearQueue() {
-            let token = localStorage.getItem('sp_access_token');
-            let success = true;
-            
-            for (let i = 0; i < 15; i++) {
-                let queueRes = await fetch('https://api.spotify.com/v1/me/player/queue', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!queueRes.ok) break;
-                let queueData = await queueRes.json();
-                if (!queueData.queue || queueData.queue.length === 0) break;
-
-                let skipRes = await fetch('https://api.spotify.com/v1/me/player/next', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!skipRes.ok && skipRes.status !== 204) {
-                    success = false;
-                    break;
-                }
-            }
-
-            if (success) {
-                showRequestStatus("Queue cleared via !clear");
-                await fetchQueueList();
-            } else {
-                showRequestStatus("Failed to fully clear queue");
-            }
-        }
-
-        function showRequestStatus(text) {
+        function showRequestStatus(htmlText) {
             const statusEl = document.getElementById('requestStatus');
             if (!statusEl) return;
-            statusEl.innerText = text;
+            statusEl.innerHTML = htmlText;
             setTimeout(() => {
-                if (statusEl.innerText === text) statusEl.innerText = '';
+                if (statusEl.innerHTML === htmlText) statusEl.innerHTML = '';
             }, 6000);
         }
 
@@ -1256,9 +1147,8 @@
             const encoder = new TextEncoder();
             const data = encoder.encode(plain);
             return window.crypto.subtle.digest('SHA-256', data).then(buffer => {
-                let base64URL = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+                return btoa(String.fromCharCode(...new Uint8Array(buffer)))
                     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-                return base64URL;
             });
         }
     </script>
